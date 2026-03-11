@@ -6,6 +6,19 @@ import grails.gorm.transactions.Transactional
 class RecVersionService_2 {
 
     /**
+     * Helper method to safely get designation name from RecPost
+     */
+    private String getPostName(RecPost post) {
+        if (!post) return "Unknown"
+        try {
+            return post.designation?.name ?: "Unknown"
+        } catch (Exception e) {
+            println("Warning: Could not load designation for post ID ${post.id}: ${e.message}")
+            return "Unknown"
+        }
+    }
+
+    /**
      * Get candidate list with filtering by branch and/or post
      * Returns: List of applications with candidate details, addresses, and document counts
      */
@@ -118,18 +131,47 @@ class RecVersionService_2 {
                                     def recapplicationdocumentcount = RecApplicantDocument.countByRecapplicant(application?.recapplicant)
                                     
                                     finalrecapplicationlist.add([
-                                        application: application,
-                                        branch: recbranch,
-                                        post: recpost,
+                                        application: [
+                                            id: application.id,
+                                            applicaitionid: application.applicaitionid,
+                                            isfeespaid: application.isfeespaid,
+                                            recapplicant: [
+                                                id: application.recapplicant.id,
+                                                fullname: application.recapplicant.fullname,
+                                                email: application.recapplicant.email,
+                                                mobilenumber: application.recapplicant.mobilenumber,
+                                                dateofbirth: application.recapplicant.dateofbirth
+                                            ]
+                                        ],
+                                        branch: [
+                                            id: recbranch.id,
+                                            name: recbranch.name
+                                        ],
+                                        post: [
+                                            id: recpost.id,
+                                            name: getPostName(recpost)
+                                        ],
                                         documentCount: recapplicationdocumentcount
                                     ])
 
-                                    // Get addresses
+                                    // Get addresses - only essential fields
                                     def permanent = Address.findByRecapplicantAndAddresstype(application?.recapplicant, permanentAddressType)
-                                    permanentaddressList.add(permanent)
+                                    permanentaddressList.add(permanent ? [
+                                        id: permanent.id,
+                                        address: permanent.address,
+                                        city: permanent.city,
+                                        state: permanent.state,
+                                        pincode: permanent.pincode
+                                    ] : null)
 
                                     def local = Address.findByRecapplicantAndAddresstype(application?.recapplicant, localAddressType)
-                                    localaddressList.add(local)
+                                    localaddressList.add(local ? [
+                                        id: local.id,
+                                        address: local.address,
+                                        city: local.city,
+                                        state: local.state,
+                                        pincode: local.pincode
+                                    ] : null)
                                 }
                             }
                         }
@@ -146,18 +188,49 @@ class RecVersionService_2 {
                                 def recapplicationdocumentcount = RecApplicantDocument.countByRecapplicant(application?.recapplicant)
                                 
                                 finalrecapplicationlist.add([
-                                    application: application,
-                                    branch: recbranch,
-                                    post: application?.recpost,
+                                    application: [
+                                        id: application.id,
+                                        applicaitionid: application.applicaitionid,
+                                        isfeespaid: application.isfeespaid,
+                                        recapplicant: [
+                                            id: application.recapplicant.id,
+                                            fullname: application.recapplicant.fullname,
+                                            email: application.recapplicant.email,
+                                            mobilenumber: application.recapplicant.mobilenumber,
+                                            dateofbirth: application.recapplicant.dateofbirth
+                                        ]
+                                    ],
+                                    branch: [
+                                        id: recbranch.id,
+                                        name: recbranch.name
+                                    ],
+                                    post: application?.recpost?.collect { p ->
+                                        [
+                                            id: p.id,
+                                            name: getPostName(p)
+                                        ]
+                                    },
                                     documentCount: recapplicationdocumentcount
                                 ])
 
-                                // Get addresses
+                                // Get addresses - only essential fields
                                 def permanent = Address.findByRecapplicantAndAddresstype(application?.recapplicant, permanentAddressType)
-                                permanentaddressList.add(permanent)
+                                permanentaddressList.add(permanent ? [
+                                    id: permanent.id,
+                                    address: permanent.address,
+                                    city: permanent.city,
+                                    state: permanent.state,
+                                    pincode: permanent.pincode
+                                ] : null)
 
                                 def local = Address.findByRecapplicantAndAddresstype(application?.recapplicant, localAddressType)
-                                localaddressList.add(local)
+                                localaddressList.add(local ? [
+                                    id: local.id,
+                                    address: local.address,
+                                    city: local.city,
+                                    state: local.state,
+                                    pincode: local.pincode
+                                ] : null)
                             }
                         }
                     }
@@ -173,18 +246,49 @@ class RecVersionService_2 {
                                 def recapplicationdocumentcount = RecApplicantDocument.countByRecapplicant(application?.recapplicant)
                                 
                                 finalrecapplicationlist.add([
-                                    application: application,
-                                    branch: application?.recbranch,
-                                    post: recpost,
+                                    application: [
+                                        id: application.id,
+                                        applicaitionid: application.applicaitionid,
+                                        isfeespaid: application.isfeespaid,
+                                        recapplicant: [
+                                            id: application.recapplicant.id,
+                                            fullname: application.recapplicant.fullname,
+                                            email: application.recapplicant.email,
+                                            mobilenumber: application.recapplicant.mobilenumber,
+                                            dateofbirth: application.recapplicant.dateofbirth
+                                        ]
+                                    ],
+                                    branch: application?.recbranch?.collect { b ->
+                                        [
+                                            id: b.id,
+                                            name: b.name
+                                        ]
+                                    },
+                                    post: [
+                                        id: recpost.id,
+                                        name: getPostName(recpost)
+                                    ],
                                     documentCount: recapplicationdocumentcount
                                 ])
 
-                                // Get addresses
+                                // Get addresses - only essential fields
                                 def permanent = Address.findByRecapplicantAndAddresstype(application?.recapplicant, permanentAddressType)
-                                permanentaddressList.add(permanent)
+                                permanentaddressList.add(permanent ? [
+                                    id: permanent.id,
+                                    address: permanent.address,
+                                    city: permanent.city,
+                                    state: permanent.state,
+                                    pincode: permanent.pincode
+                                ] : null)
 
                                 def local = Address.findByRecapplicantAndAddresstype(application?.recapplicant, localAddressType)
-                                localaddressList.add(local)
+                                localaddressList.add(local ? [
+                                    id: local.id,
+                                    address: local.address,
+                                    city: local.city,
+                                    state: local.state,
+                                    pincode: local.pincode
+                                ] : null)
                             }
                         }
                     }
@@ -195,31 +299,79 @@ class RecVersionService_2 {
                     def recapplicationdocumentcount = RecApplicantDocument.countByRecapplicant(application?.recapplicant)
                     
                     finalrecapplicationlist.add([
-                        application: application,
-                        branch: application?.recbranch,
-                        post: application?.recpost,
+                        application: [
+                            id: application.id,
+                            applicaitionid: application.applicaitionid,
+                            isfeespaid: application.isfeespaid,
+                            recapplicant: [
+                                id: application.recapplicant.id,
+                                fullname: application.recapplicant.fullname,
+                                email: application.recapplicant.email,
+                                mobilenumber: application.recapplicant.mobilenumber,
+                                dateofbirth: application.recapplicant.dateofbirth
+                            ]
+                        ],
+                        branch: application?.recbranch?.collect { b ->
+                            [
+                                id: b.id,
+                                name: b.name
+                            ]
+                        },
+                        post: application?.recpost?.collect { p ->
+                            [
+                                id: p.id,
+                                name: getPostName(p)
+                            ]
+                        },
                         documentCount: recapplicationdocumentcount
                     ])
 
-                    // Get addresses
+                    // Get addresses - only essential fields
                     def permanent = Address.findByRecapplicantAndAddresstype(application?.recapplicant, permanentAddressType)
-                    permanentaddressList.add(permanent)
+                    permanentaddressList.add(permanent ? [
+                        id: permanent.id,
+                        address: permanent.address,
+                        city: permanent.city,
+                        state: permanent.state,
+                        pincode: permanent.pincode
+                    ] : null)
 
                     def local = Address.findByRecapplicantAndAddresstype(application?.recapplicant, localAddressType)
-                    localaddressList.add(local)
+                    localaddressList.add(local ? [
+                        id: local.id,
+                        address: local.address,
+                        city: local.city,
+                        state: local.state,
+                        pincode: local.pincode
+                    ] : null)
                 }
             }
 
-            // Prepare response
+            // Prepare response - only essential fields
             hm.candidateList = finalrecapplicationlist
             hm.total = finalrecapplicationlist.size()
             hm.permanentAddresses = permanentaddressList
             hm.localAddresses = localaddressList
-            hm.recpost = recpost
-            hm.recbranch = recbranch
-            hm.recVersion = recVersion
-            hm.academicYear = academicYear
-            hm.organization = organization
+            hm.recpost = recpost ? [
+                id: recpost.id,
+                name: getPostName(recpost)
+            ] : null
+            hm.recbranch = recbranch ? [
+                id: recbranch.id,
+                name: recbranch.name
+            ] : null
+            hm.recVersion = [
+                id: recVersion.id,
+                version_number: recVersion.version_number
+            ]
+            hm.academicYear = [
+                id: academicYear.id,
+                ay: academicYear.ay
+            ]
+            hm.organization = [
+                id: organization.id,
+                organization_name: organization.organization_name
+            ]
             hm.msg = "Candidate list fetched successfully"
             hm.flag = true
 
