@@ -5,6 +5,8 @@ import grails.converters.*
 
 class RecInterviewScheduleController {
     static responseFormats = ['json', 'xml']
+    
+    def sendMailService
 
     def handleException(Exception e) {
         HashMap hashMap = new HashMap()
@@ -33,6 +35,18 @@ class RecInterviewScheduleController {
         hm.put("flag", false)
         RecInterviewScheduleService service = new RecInterviewScheduleService()
         service."$methodName"(hm, request)
+        render hm as JSON
+    }
+    
+    def processRequestWithEmail(serviceMethod) {
+        println("Processing request for: ${serviceMethod}")
+
+        HashMap hm = new HashMap()
+        hm.putAll(commonData(request))
+        hm.put("msg", "Failed!!!")
+        hm.put("flag", false)
+        RecInterviewScheduleService service = new RecInterviewScheduleService()
+        service."${serviceMethod}"(hm, request, request.JSON, sendMailService)
         render hm as JSON
     }
 
@@ -160,5 +174,29 @@ class RecInterviewScheduleController {
      */
     def deletesched() {
         processRequest("deleteSched")
+    }
+
+    /**
+     * API Endpoint: Send interview call letters via email
+     * URL: /recInterviewSchedule/sendmail
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "version": recVersionId }
+     * Returns: JSON with email sending statistics (emailsSent, emailsFailed, failedEmails)
+     */
+    def sendmail() {
+        processRequestWithEmail("sendInterviewCallLetters")
+    }
+
+    /**
+     * API Endpoint: Preview interview call letters
+     * URL: /recInterviewSchedule/preview_callletter
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "version": recVersionId }
+     * Returns: JSON with list of candidates and their interview details
+     */
+    def preview_callletter() {
+        processRequest("previewCallLetters")
     }
 }

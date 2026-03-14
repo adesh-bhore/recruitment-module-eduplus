@@ -769,4 +769,349 @@ class RecInterviewScheduleService {
             hm.flag = false
         }
     }
+
+    /**
+     * Send interview call letters via email
+     * Sends emails to all candidates called for interview who haven't received mail yet
+     */
+    def sendInterviewCallLetters(hm, request, data, sendMailService) {
+        try {
+            def inst = hm.remove("inst")
+            def org = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            // Get parameters
+            def recversionId = data.version
+
+            if (!recversionId) {
+                hm.msg = "Recruitment Version ID is required"
+                hm.flag = false
+                return
+            }
+
+            // Get recruitment version
+            RecVersion recversion = RecVersion.get(recversionId)
+            if (!recversion) {
+                hm.msg = "Recruitment Version not found with ID: ${recversionId}"
+                hm.flag = false
+                return
+            }
+
+            // Get last authority (Management)
+            RecAuthorityType auth = RecAuthorityType.findByIslastauthorityAndOrganization(true, org)
+            if (!auth) {
+                hm.msg = "Management authority not found for organization"
+                hm.flag = false
+                return
+            }
+
+            // Get candidates called for interview who haven't received mail
+            def selectedbymgmt = RecApplicationStatus.findAllByIscalledforinterviewAndIsmailsentAndOrganizationAndRecauthoritytypeAndRecversion(
+                true, false, org, auth, recversion
+            )
+
+            if (selectedbymgmt.size() == 0) {
+                hm.msg = "No candidates found who are called for interview and haven't received mail"
+                hm.flag = false
+                hm.emailsSent = 0
+                return
+            }
+
+            // Email configuration
+            def username = org?.establishment_email
+            def password = org?.establishment_email_credentials
+
+            if (!username || !password) {
+                hm.msg = "Organization email credentials not configured"
+                hm.flag = false
+                return
+            }
+
+            def emailsSent = 0
+            def emailsFailed = 0
+            def failedEmails = []
+
+            // Send emails to each candidate
+            for (app in selectedbymgmt) {
+                try {
+                    // Skip if version doesn't match
+                    if (recversion?.id != app?.recapplication?.recversion?.id) {
+                        continue
+                    }
+
+                    // Get interview schedule for department
+                    RecInterviewScheduleDetails sche = RecInterviewScheduleDetails.findByOrganizationAndDepartmentAndRecversion(
+                        org, app?.recbranch?.program?.department, recversion
+                    )
+
+                    if (!sche) {
+                        println("Interview schedule not found for department: ${app?.recbranch?.program?.department?.name}")
+                        continue
+                    }
+
+                    // Format interview date
+                    SimpleDateFormat df = new SimpleDateFormat("dd/MMM/yyyy")
+                    String interviewDate = df.format(sche?.interview_date)
+                    String currentDate = df.format(new Date())
+
+                    // Prepare email content
+                    def emailBody = generateInterviewCallLetterHTML(
+                        org, 
+                        app.recapplication, 
+                        app.recbranch, 
+                        interviewDate, 
+                        sche?.interview_venue,
+                        sche?.interview_time,
+                        currentDate
+                    )
+
+                    // Send email
+                    def emailResult = sendMailService.sendmailwithcss(
+                        username,
+                        password,
+                        app.recapplication.recapplicant.email,
+                        "Faculty Interview Call Letter",
+                        emailBody,
+                        "",
+                        username
+                    )
+
+                    if (emailResult == 1) {
+                        // Update mail sent status
+                        app.ismailsent = true
+                        app.mailsentdate = new Date()
+                        app.save(flush: true, failOnError: true)
+                        emailsSent++
+                    } else {
+                        emailsFailed++
+                        failedEmails.add(app.recapplication.recapplicant.email)
+                    }
+
+                } catch (Exception e) {
+                    println("Error sending email to ${app.recapplication.recapplicant.email}: ${e.message}")
+                    emailsFailed++
+                    failedEmails.add(app.recapplication.recapplicant.email)
+                }
+            }
+
+            hm.emailsSent = emailsSent
+            hm.emailsFailed = emailsFailed
+            hm.failedEmails = failedEmails
+            hm.msg = "Interview call letters sent successfully. Sent: ${emailsSent}, Failed: ${emailsFailed}"
+            hm.flag = true
+
+        } catch (Exception e) {
+            println("Error in sendInterviewCallLetters: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error sending interview call letters: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Preview interview call letters
+     * Returns list of candidates with their interview details for preview
+     */
+    def previewCallLetters(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            // Get parameters
+            def recversionId = data.version
+
+            if (!recversionId) {
+                hm.msg = "Recruitment Version ID is required"
+                hm.flag = false
+                return
+            }
+
+            // Get recruitment version
+            RecVersion recversion = RecVersion.get(recversionId)
+            if (!recversion) {
+                hm.msg = "Recruitment Version not found with ID: ${recversionId}"
+                hm.flag = false
+                return
+            }
+
+            // Get last authority (Management)
+            RecAuthorityType auth = RecAuthorityType.findByIslastauthorityAndOrganization(true, org)
+            if (!auth) {
+                hm.msg = "Management authority not found for organization"
+                hm.flag = false
+                return
+            }
+
+            // Get all candidates called for interview
+            def selectedbymgmt = RecApplicationStatus.findAllByIscalledforinterviewAndOrganizationAndRecauthoritytypeAndRecversion(
+                true, org, auth, recversion
+            )
+
+            if (selectedbymgmt.size() == 0) {
+                hm.msg = "Call letter preview generated successfully"
+                hm.flag = true
+                hm.callLetterList = []
+                hm.totalCandidates = 0
+                return
+            }
+
+            def callLetterList = []
+
+            // Prepare preview data for each candidate
+            for (app in selectedbymgmt) {
+                try {
+                    // Skip if version doesn't match
+                    if (recversion?.id != app?.recapplication?.recversion?.id) {
+                        continue
+                    }
+
+                    // Get interview schedule for department
+                    RecInterviewScheduleDetails sche = RecInterviewScheduleDetails.findByOrganizationAndDepartmentAndRecversion(
+                        org, app?.recbranch?.program?.department, recversion
+                    )
+
+                    if (!sche) {
+                        continue
+                    }
+
+                    // Format interview date
+                    SimpleDateFormat df = new SimpleDateFormat("dd/MMM/yyyy")
+                    String interviewDate = df.format(sche?.interview_date)
+
+                    // Get applicant details
+                    def applicant = app.recapplication.recapplicant
+
+                    // Prepare call letter data
+                    def callLetter = [
+                        applicant: [
+                            id: applicant?.id,
+                            email: applicant?.email,
+                            name: applicant?.fullname ?: "Unknown"
+                        ],
+                        branch: [
+                            id: app.recbranch?.id,
+                            name: app.recbranch?.name ?: "Unknown"
+                        ],
+                        department: [
+                            id: app.recbranch?.program?.department?.id,
+                            name: app.recbranch?.program?.department?.name ?: "Unknown"
+                        ],
+                        interview: [
+                            date: interviewDate,
+                            venue: sche?.interview_venue,
+                            time: sche?.interview_time
+                        ],
+                        mailStatus: [
+                            sent: app.ismailsent,
+                            sentDate: app.mailsentdate
+                        ]
+                    ]
+
+                    callLetterList.add(callLetter)
+
+                } catch (Exception e) {
+                    println("Error preparing preview for application ${app.id}: ${e.message}")
+                }
+            }
+
+            hm.callLetterList = callLetterList
+            hm.totalCandidates = callLetterList.size()
+            hm.msg = "Call letter preview generated successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            println("Error in previewCallLetters: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error generating call letter preview: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Helper method to generate HTML email content for interview call letter
+     */
+    private String generateInterviewCallLetterHTML(org, recapplication, recbranch, interviewDate, venue, time, currentDate) {
+        def applicant = recapplication.recapplicant
+        def fullName = applicant?.fullname ?: "Candidate"
+
+        def html = """
+<div style="width:90%; background:#fff; font-family: Arial, sans-serif;">
+    <div class="body" style="background:#f2edf5; padding:20px;">
+        <table style="width:100%; font-size:16px; border: 1px solid black; border-collapse: collapse; background:#fff;">
+            <tr>
+                <td style="width:15%; padding:10px; text-align:center;">
+                    ${org?.org_logo ? "<img src='${org.org_logo}' style='height:100px; width:auto;' />" : ""}
+                </td>
+                <td style="width:70%; padding:10px; text-align:center;">
+                    <span style="font-size:18px; font-weight:900;">${org?.organization_name ?: ''}</span>
+                </td>
+                <td style="width:15%; padding:10px; text-align:center;">
+                    ${org?.organizationgroup?.group_featured_logo ? "<img src='${org.organizationgroup.group_featured_logo}' style='height:100px; width:auto;' />" : ""}
+                </td>
+            </tr>
+        </table>
+        
+        <div style="padding:20px; background:#fff; margin-top:10px;">
+            <p style="text-align:right;">Date: ${currentDate}</p>
+            
+            <p>Dear ${fullName},</p>
+            
+            <p>Greetings from <b>${org?.organization_name ?: ''}</b>!</p>
+            
+            <p>We are pleased to inform you that your application for the position in <b>${recbranch?.name ?: 'the department'}</b> 
+            has been shortlisted for the interview process.</p>
+            
+            <p><b>Interview Details:</b></p>
+            <table style="margin-left:20px; font-size:15px;">
+                <tr>
+                    <td style="padding:5px;"><b>Date:</b></td>
+                    <td style="padding:5px;">${interviewDate}</td>
+                </tr>
+                <tr>
+                    <td style="padding:5px;"><b>Time:</b></td>
+                    <td style="padding:5px;">${time ?: 'Will be communicated'}</td>
+                </tr>
+                <tr>
+                    <td style="padding:5px;"><b>Venue:</b></td>
+                    <td style="padding:5px;">${venue ?: 'Will be communicated'}</td>
+                </tr>
+            </table>
+            
+            <p><b>Please bring the following documents:</b></p>
+            <ul>
+                <li>Updated Resume/CV</li>
+                <li>All Educational Certificates (Originals and Photocopies)</li>
+                <li>Experience Certificates (if applicable)</li>
+                <li>Valid Photo ID Proof</li>
+                <li>Recent Passport Size Photographs (2 copies)</li>
+            </ul>
+            
+            <p>Please confirm your attendance by replying to this email.</p>
+            
+            <p>We look forward to meeting you.</p>
+            
+            <p><b>Best Regards,</b><br/>
+            <b>Establishment Department</b><br/>
+            <b>${org?.organization_name ?: ''}</b></p>
+        </div>
+        
+        <div style="text-align:center; margin-top:20px;">
+            <img width='300px' src='https://vierp-test.s3.ap-south-1.amazonaws.com/epclogo/logo.png' />
+        </div>
+    </div>
+</div>
+"""
+        return html
+    }
 }
