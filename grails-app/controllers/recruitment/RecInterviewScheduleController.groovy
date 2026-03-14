@@ -1,0 +1,164 @@
+package recruitment
+
+import grails.rest.*
+import grails.converters.*
+
+class RecInterviewScheduleController {
+    static responseFormats = ['json', 'xml']
+
+    def handleException(Exception e) {
+        HashMap hashMap = new HashMap()
+        hashMap.put("error_msg", e.message)
+        render hashMap as JSON
+        return
+    }
+
+    def processRequest(serviceMethod) {
+        println("Processing request for: ${serviceMethod}")
+
+        HashMap hm = new HashMap()
+        hm.putAll(commonData(request))
+        hm.put("msg", "Failed!!!")
+        hm.put("flag", false)
+        RecInterviewScheduleService service = new RecInterviewScheduleService()
+        service."${serviceMethod}"(hm, request, request.JSON)
+        render hm as JSON
+    }
+
+    def processRequestWithoutParams(String methodName) {
+        println("In $methodName")
+        HashMap hm = new HashMap()
+        hm.putAll(commonData(request))
+        hm.put("msg", "Failed!!!")
+        hm.put("flag", false)
+        RecInterviewScheduleService service = new RecInterviewScheduleService()
+        service."$methodName"(hm, request)
+        render hm as JSON
+    }
+
+    def commonData(request) {
+        def loginId = request.getHeader("EPC-UID")
+        println("DEBUG: EPC-UID header value: ${loginId}")
+        
+        Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+        println("DEBUG: Login found: ${login?.id}, username: ${login?.username}")
+        
+        Instructor instructor = Instructor.findByUid(login?.username)
+        println("DEBUG: Instructor found: ${instructor?.id}, uid: ${instructor?.uid}, org: ${instructor?.organization?.id}")
+        
+        def hm = [:]
+        hm.inst = instructor
+        hm.org = instructor?.organization
+        return hm
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    /**
+     * API Endpoint: Get interview schedule list with filter data
+     * URL: /recInterviewSchedule/getinterviewschedule
+     * Method: GET
+     * Headers: EPC-UID (username)
+     * Returns: JSON with interview schedules, academic years, organizations, versions, departments, posts
+     */
+    def getinterviewschedule() {
+        processRequestWithoutParams("getInterviewScheduleList")
+    }
+
+    /**
+     * API Endpoint: Get recruitment versions by organization and academic year
+     * URL: /recInterviewSchedule/getRecVersion
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "org": organizationId (optional), "ay": academicYearId }
+     * Returns: JSON with list of recruitment versions
+     */
+    def getRecVersion() {
+        processRequest("getRecVersion")
+    }
+
+    /**
+     * API Endpoint: Get departments by organization and recruitment version
+     * URL: /recInterviewSchedule/getDept
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "org": organizationId (optional), "recver": recVersionId }
+     * Returns: JSON with list of departments
+     */
+    def getDept() {
+        processRequest("getDept")
+    }
+
+    /**
+     * API Endpoint: Get posts by organization and recruitment version
+     * URL: /recInterviewSchedule/getPost
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "org": organizationId (optional), "recver": recVersionId }
+     * Returns: JSON with list of posts
+     */
+    def getPost() {
+        processRequest("getPost")
+    }
+
+    /**
+     * API Endpoint: Get interview list by organization and recruitment version
+     * URL: /recInterviewSchedule/getInterviewList
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "org": organizationId (optional), "recver": recVersionId }
+     * Returns: JSON with list of interview schedules
+     */
+    def getInterviewList() {
+        processRequest("getInterviewList")
+    }
+
+    /**
+     * API Endpoint: Save new interview schedule
+     * URL: /recInterviewSchedule/saveinterviewschedule
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { 
+     *   "org": organizationId (optional), 
+     *   "recversion": recVersionId, 
+     *   "department": departmentId, 
+     *   "post": postId,
+     *   "interview_date": "2024-12-25",
+     *   "interview_venue": "Main Building, Room 101",
+     *   "interview_time": "10:00 AM"
+     * }
+     * Returns: JSON with saved schedule details
+     */
+    def saveinterviewschedule() {
+        processRequest("saveInterviewSchedule")
+    }
+
+    /**
+     * API Endpoint: Update existing interview schedule
+     * URL: /recInterviewSchedule/editinterviewschedule
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { 
+     *   "recid": scheduleId,
+     *   "interview_date": "2024-12-25",
+     *   "interview_venue": "Main Building, Room 101",
+     *   "interview_time": "10:00 AM"
+     * }
+     * Returns: JSON with updated schedule details
+     */
+    def editinterviewschedule() {
+        processRequest("editInterviewSchedule")
+    }
+
+    /**
+     * API Endpoint: Delete interview schedule
+     * URL: /recInterviewSchedule/deletesched
+     * Method: POST
+     * Headers: EPC-UID (username)
+     * Body: { "recshcid": scheduleId }
+     * Returns: JSON with success/failure message
+     */
+    def deletesched() {
+        processRequest("deleteSched")
+    }
+}

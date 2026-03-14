@@ -10,6 +10,7 @@ class UrlMappings {
         "/(?i:fetchDomain)/$action?"(controller: "FetchDomain")
         "/(?i:recVersion)/$action?"(controller: "RecVersion")
         "/(?i:recApplicationLogin)/$action?"(controller: "RecApplicationLogin")
+        "/(?i:recInterviewSchedule)/$action?"(controller: "RecInterviewSchedule")
         
         // Test API endpoints
         "/(?i:hello)/$action?"(controller: "hello")
