@@ -199,4 +199,60 @@ class RecInterviewScheduleController {
     def preview_callletter() {
         processRequest("previewCallLetters")
     }
+
+    // ── Branch APIs ──────────────────────────────────────────────────
+
+    /**
+     * API Endpoint: Get all branches with form data (programs + versions)
+     * URL: /recInterviewSchedule/getRecBranchList
+     * Method: GET
+     * Headers: EPC-UID
+     */
+    def getRecBranchList() {
+        processRequestWithoutParams("getRecBranchList")
+    }
+
+    /**
+     * API Endpoint: Save new recruitment branch
+     * URL: /recInterviewSchedule/saverecBranch
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "recver": 1, "program": 1, "recbranch": "CSE", "recbranchabbr": "CSE" }
+     */
+    def saverecBranch() {
+        processRequest("saveRecBranch")
+    }
+
+    /**
+     * API Endpoint: Edit existing recruitment branch
+     * URL: /recInterviewSchedule/editRecBranch
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "editId": 1, "program": 1, "recbranch": "Updated Name", "recbranchabbr": "UPD" }
+     */
+    def editRecBranch() {
+        processRequest("editRecBranch")
+    }
+
+    /**
+     * API Endpoint: Delete recruitment branch
+     * URL: /recInterviewSchedule/deleterecBranch
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "brcid": 1 }
+     */
+    def deleterecBranch() {
+        processRequest("deleteRecBranch")
+    }
+
+    /**
+     * API Endpoint: Toggle isActive on a recruitment branch
+     * URL: /recInterviewSchedule/isActiveBranch
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "ActiveId": 1 }
+     */
+    def isActiveBranch() {
+        processRequest("toggleBranchActive")
+    }
 }
