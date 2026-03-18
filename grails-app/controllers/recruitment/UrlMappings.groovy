@@ -15,7 +15,7 @@ class UrlMappings {
         // Test API endpoints
         "/(?i:hello)/$action?"(controller: "hello")
 
-        "/"(view: "/index")
+        "/"(controller: "application", action: "index")
         "500"(view: '/error')
         "404"(view: '/notFound')
     }

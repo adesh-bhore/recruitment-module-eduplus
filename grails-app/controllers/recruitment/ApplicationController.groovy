@@ -9,6 +9,14 @@ class ApplicationController implements PluginManagerAware {
     GrailsPluginManager pluginManager
 
     def index() {
-        [grailsApplication: grailsApplication, pluginManager: pluginManager]
+        render(contentType: "application/json") {
+            [
+                application: grailsApplication.metadata['info.app.name'],
+                version: grailsApplication.metadata['info.app.version'],
+                grailsVersion: grailsApplication.metadata['info.app.grailsVersion'],
+                status: "running",
+                message: "Recruitment API is running. Use /health for health check."
+            ]
+        }
     }
 }

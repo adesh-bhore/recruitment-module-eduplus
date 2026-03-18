@@ -91,6 +91,11 @@ dependencies {
     implementation files('libs/org.json.jar')
     implementation files('libs/json_simple-1.1.jar')
     implementation files('libs/mail.jar')
+    
+    // JavaMail API - Add from Maven if local JAR is missing
+    implementation 'com.sun.mail:javax.mail:1.6.2'
+    implementation 'javax.activation:activation:1.1.1'
+    
     implementation 'com.amazonaws:aws-java-sdk-s3'
     implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.1000')
     implementation 'mysql:mysql-connector-java:8.0.13'
