@@ -1547,6 +1547,177 @@ class RecInterviewScheduleService {
 
     // ────────────────────────────────────────────────────────────────
 
+    // ── Post Assignment Service Methods ──────────────────────────────
+
+    /**
+     * Get all ERPFacultyPost and Instructors for post assignment
+     * Used by: GET /recInterviewSchedule/getAssignPostList
+     */
+    def getAssignPostList(hm, request) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def erpPostList = ERPFacultyPost.findAllByOrganization(org)
+            def allInstructors = Instructor.findAllByOrganizationAndIscurrentlyworking(org, true)
+
+            hm.erpPost = erpPostList.collect { p ->
+                [
+                    id   : p.id,
+                    name : p.name
+                ]
+            }
+
+            hm.allInst = allInstructors.collect { i ->
+                def personName = "Unknown"
+                try {
+                    def person = i.person
+                    personName = "${person?.firstName ?: ''} ${person?.middleName ?: ''} ${person?.lastName ?: ''}".trim()
+                } catch (Exception e) {
+                    println("Warning: Could not load person for instructor ID ${i.id}: ${e.message}")
+                }
+                
+                [
+                    id           : i.id,
+                    uid          : i.uid,
+                    employee_code: i.employee_code,
+                    name         : personName
+                ]
+            }
+
+            hm.msg  = "Post assignment data fetched successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in getAssignPostList: ${e.message}", e)
+            hm.msg  = "Error fetching post assignment data: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Assign ERPFacultyPost to Instructor (many-to-many)
+     * Used by: POST /recInterviewSchedule/saveassignPost
+     */
+    def saveAssignPost(hm, request, data) {
+        try {
+            def currentInst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!currentInst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def instId = data.inst
+            def postId = data.post
+
+            if (!instId || !postId) {
+                hm.msg = "inst and post are required"
+                hm.flag = false
+                return
+            }
+
+            Instructor instructor = Instructor.get(instId)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+
+            ERPFacultyPost erpFacultyPost = ERPFacultyPost.get(postId)
+            if (!erpFacultyPost) {
+                hm.msg = "Faculty post not found"
+                hm.flag = false
+                return
+            }
+
+            // Check if already assigned
+            def postlist = instructor.erpfacultypost
+            if (postlist) {
+                def isavailable = postlist.any { it.id == erpFacultyPost.id }
+                if (isavailable) {
+                    hm.msg = "Post already assigned to this instructor"
+                    hm.flag = false
+                    return
+                }
+            }
+
+            // Assign post
+            instructor.addToErpfacultypost(erpFacultyPost)
+            instructor.save(flush: true, failOnError: true)
+
+            hm.msg  = "Post assigned successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in saveAssignPost: ${e.message}", e)
+            hm.msg  = "Error assigning post: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Remove ERPFacultyPost assignment from Instructor
+     * Used by: POST /recInterviewSchedule/deleteassignPost
+     */
+    def deleteAssignPost(hm, request, data) {
+        try {
+            def currentInst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!currentInst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def instId = data.instid
+            def postId = data.postid
+
+            if (!instId || !postId) {
+                hm.msg = "instid and postid are required"
+                hm.flag = false
+                return
+            }
+
+            Instructor instructor = Instructor.get(instId)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+
+            ERPFacultyPost erpFacultyPost = ERPFacultyPost.get(postId)
+            if (!erpFacultyPost) {
+                hm.msg = "Faculty post not found"
+                hm.flag = false
+                return
+            }
+
+            // Remove post assignment
+            instructor.removeFromErpfacultypost(erpFacultyPost)
+            instructor.save(flush: true, failOnError: true)
+
+            hm.msg  = "Post assignment removed successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in deleteAssignPost: ${e.message}", e)
+            hm.msg  = "Error removing post assignment: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────
+
     /**
      * Helper method to generate HTML email content for interview call letter
      */

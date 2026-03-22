@@ -311,4 +311,38 @@ class RecInterviewScheduleController {
     def isActivePost() {
         processRequest("togglePostActive")
     }
+
+    // ── Post Assignment APIs ─────────────────────────────────────────
+
+    /**
+     * API Endpoint: Get all faculty posts and instructors for assignment
+     * URL: /recInterviewSchedule/getAssignPostList
+     * Method: GET
+     * Headers: EPC-UID
+     */
+    def getAssignPostList() {
+        processRequestWithoutParams("getAssignPostList")
+    }
+
+    /**
+     * API Endpoint: Assign faculty post to instructor
+     * URL: /recInterviewSchedule/saveassignPost
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "inst": 1, "post": 1 }
+     */
+    def saveassignPost() {
+        processRequest("saveAssignPost")
+    }
+
+    /**
+     * API Endpoint: Remove faculty post assignment from instructor
+     * URL: /recInterviewSchedule/deleteassignPost
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "instid": 1, "postid": 1 }
+     */
+    def deleteassignPost() {
+        processRequest("deleteAssignPost")
+    }
 }
