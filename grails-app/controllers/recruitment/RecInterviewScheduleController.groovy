@@ -345,7 +345,6 @@ class RecInterviewScheduleController {
     def deleteassignPost() {
         processRequest("deleteAssignPost")
     }
-}
 
     // ── Document Type Management APIs ────────────────────────────────
 
