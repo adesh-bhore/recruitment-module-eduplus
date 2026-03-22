@@ -401,4 +401,37 @@ class RecInterviewScheduleController {
     def isActiveDocumentType() {
         processRequest("toggleDocumentTypeActive")
     }
+
+    // ── Document Viewing APIs ────────────────────────────────────────
+
+    /**
+     * API Endpoint: Get list of applications with documents
+     * URL: /recInterviewSchedule/recdocumentList
+     * Method: GET
+     * Headers: EPC-UID
+     */
+    def recdocumentList() {
+        processRequestWithoutParams("getRecDocumentList")
+    }
+
+    /**
+     * API Endpoint: Get documents for a specific applicant
+     * URL: /recInterviewSchedule/getdoc
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "recapcntid": 1 }
+     */
+    def getdoc() {
+        processRequest("getApplicantDocuments")
+    }
+
+    /**
+     * API Endpoint: Get document statistics
+     * URL: /recInterviewSchedule/getDocumentStatistics
+     * Method: GET
+     * Headers: EPC-UID
+     */
+    def getDocumentStatistics() {
+        processRequestWithoutParams("getDocumentStatistics")
+    }
 }

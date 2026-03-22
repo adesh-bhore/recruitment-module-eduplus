@@ -2,6 +2,7 @@ package recruitment
 
 import grails.gorm.transactions.Transactional
 import java.text.SimpleDateFormat
+import common.AWSBucketService
 
 @Transactional
 class RecInterviewScheduleService {
@@ -2042,4 +2043,252 @@ class RecInterviewScheduleService {
             hm.flag = false
         }
     }
+
+
+    // ── Document Viewing Service Methods ─────────────────────────────
+
+    /**
+     * Get list of applications with documents for current recruitment versions
+     * Used by: GET /recInterviewSchedule/recdocumentList
+     */
+    def getRecDocumentList(hm, request) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            // Get current recruitment versions
+            def recversionall = RecVersion.findAllByOrganizationAndIscurrentforbackendprocessing(org, true)
+            
+            def applicationList = []
+            
+            for (rv in recversionall) {
+                def allrecApplication = RecApplication.findAllByRecversionAndOrganization(rv, org)
+                
+                for (ra in allrecApplication) {
+                    try {
+                        def applicantName = ra.recapplicant?.fullname ?: "Unknown"
+                        def applicantEmail = ra.recapplicant?.email ?: "N/A"
+                        
+                        // Count documents for this applicant
+                        def documentCount = RecApplicantDocument.countByRecapplicant(ra.recapplicant)
+                        
+                        applicationList.add([
+                            id: ra.id,
+                            applicant: [
+                                id: ra.recapplicant?.id,
+                                name: applicantName,
+                                email: applicantEmail
+                            ],
+                            recversion: [
+                                id: rv.id,
+                                version_number: rv.version_number
+                            ],
+                            documentCount: documentCount
+                        ])
+                    } catch (Exception e) {
+                        println("Warning: Could not process application ${ra.id}: ${e.message}")
+                    }
+                }
+            }
+
+            hm.applicationList = applicationList
+            hm.totalApplications = applicationList.size()
+            hm.msg  = "Document list fetched successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in getRecDocumentList: ${e.message}", e)
+            hm.msg  = "Error fetching document list: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Get documents for a specific applicant with presigned URLs
+     * Used by: POST /recInterviewSchedule/getdoc
+     */
+    def getApplicantDocuments(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def recapcntid = data.recapcntid
+            
+            if (!recapcntid) {
+                hm.msg = "recapcntid is required"
+                hm.flag = false
+                return
+            }
+
+            RecApplicant recApplicant = RecApplicant.get(recapcntid)
+            if (!recApplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+
+            // Get all documents for this applicant
+            def rd = RecApplicantDocument.findAllByRecapplicant(recApplicant)
+            
+            def documentList = []
+            
+            // Check if AWS is configured
+            AWSBucket aws = AWSBucket.findByContent("documents")
+            
+            if (aws) {
+                // AWS is configured, generate presigned URLs
+                AWSBucketService awsBucketService = new AWSBucketService()
+                
+                for (r in rd) {
+                    try {
+                        if (r?.filepath != null && r?.filename) {
+                            def link = "cloud/" + r.filepath + r.filename
+                            String url = awsBucketService.getPresignedUrl(aws.bucketname, link, aws.region)
+                            
+                            documentList.add([
+                                id: r.id,
+                                documentType: r.recdocumenttype?.type ?: "Unknown",
+                                filename: r.filename,
+                                filepath: r.filepath,
+                                url: url
+                            ])
+                        }
+                    } catch (Exception e) {
+                        println("Warning: Could not generate URL for document ${r.id}: ${e.message}")
+                        // Add document without URL
+                        documentList.add([
+                            id: r.id,
+                            documentType: r.recdocumenttype?.type ?: "Unknown",
+                            filename: r.filename,
+                            filepath: r.filepath,
+                            url: null,
+                            error: "Could not generate presigned URL"
+                        ])
+                    }
+                }
+            } else {
+                // AWS not configured, return document info without URLs
+                for (r in rd) {
+                    documentList.add([
+                        id: r.id,
+                        documentType: r.recdocumenttype?.type ?: "Unknown",
+                        filename: r.filename,
+                        filepath: r.filepath,
+                        url: null,
+                        note: "AWS not configured"
+                    ])
+                }
+            }
+
+            hm.documentList = documentList
+            hm.totalDocuments = documentList.size()
+            hm.applicant = [
+                id: recApplicant.id,
+                name: recApplicant.fullname,
+                email: recApplicant.email
+            ]
+            hm.msg  = "Documents fetched successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in getApplicantDocuments: ${e.message}", e)
+            hm.msg  = "Error fetching documents: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Get document statistics for recruitment versions
+     * Used by: GET /recInterviewSchedule/getDocumentStatistics
+     */
+    def getDocumentStatistics(hm, request) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            // Get current recruitment versions
+            def recversionall = RecVersion.findAllByOrganizationAndIscurrentforbackendprocessing(org, true)
+            
+            def totalApplications = 0
+            def totalDocuments = 0
+            def applicationsWithDocuments = 0
+            def applicationsWithoutDocuments = 0
+            
+            def versionStats = []
+            
+            for (rv in recversionall) {
+                def applications = RecApplication.findAllByRecversionAndOrganization(rv, org)
+                def versionDocCount = 0
+                def versionAppsWithDocs = 0
+                def versionAppsWithoutDocs = 0
+                
+                for (ra in applications) {
+                    try {
+                        def docCount = RecApplicantDocument.countByRecapplicant(ra.recapplicant)
+                        versionDocCount += docCount
+                        
+                        if (docCount > 0) {
+                            versionAppsWithDocs++
+                        } else {
+                            versionAppsWithoutDocs++
+                        }
+                    } catch (Exception e) {
+                        println("Warning: Could not count documents for application ${ra.id}")
+                    }
+                }
+                
+                totalApplications += applications.size()
+                totalDocuments += versionDocCount
+                applicationsWithDocuments += versionAppsWithDocs
+                applicationsWithoutDocuments += versionAppsWithoutDocs
+                
+                versionStats.add([
+                    recversion: [
+                        id: rv.id,
+                        version_number: rv.version_number
+                    ],
+                    applications: applications.size(),
+                    documents: versionDocCount,
+                    applicationsWithDocuments: versionAppsWithDocs,
+                    applicationsWithoutDocuments: versionAppsWithoutDocs
+                ])
+            }
+
+            hm.statistics = [
+                totalApplications: totalApplications,
+                totalDocuments: totalDocuments,
+                applicationsWithDocuments: applicationsWithDocuments,
+                applicationsWithoutDocuments: applicationsWithoutDocuments,
+                averageDocumentsPerApplication: totalApplications > 0 ? (totalDocuments / totalApplications).round(2) : 0
+            ]
+            hm.versionStats = versionStats
+            hm.msg  = "Document statistics fetched successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in getDocumentStatistics: ${e.message}", e)
+            hm.msg  = "Error fetching document statistics: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────
 }
