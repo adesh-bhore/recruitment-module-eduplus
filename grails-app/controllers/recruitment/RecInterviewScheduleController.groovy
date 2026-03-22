@@ -255,4 +255,60 @@ class RecInterviewScheduleController {
     def isActiveBranch() {
         processRequest("toggleBranchActive")
     }
+
+    // ── Post Management APIs ─────────────────────────────────────────
+
+    /**
+     * API Endpoint: Get all posts with form data (designations + versions)
+     * URL: /recInterviewSchedule/getRecPostList
+     * Method: GET
+     * Headers: EPC-UID
+     */
+    def getRecPostList() {
+        processRequestWithoutParams("getRecPostList")
+    }
+
+    /**
+     * API Endpoint: Save new recruitment post
+     * URL: /recInterviewSchedule/saverecPost
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "recver": 1, "designation": 1 }
+     */
+    def saverecPost() {
+        processRequest("saveRecPost")
+    }
+
+    /**
+     * API Endpoint: Edit existing recruitment post
+     * URL: /recInterviewSchedule/editRecPost
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "editId": 1, "designation": 2 }
+     */
+    def editRecPost() {
+        processRequest("editRecPost")
+    }
+
+    /**
+     * API Endpoint: Delete recruitment post
+     * URL: /recInterviewSchedule/deleterecPost
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "brcid": 1 }
+     */
+    def deleterecPost() {
+        processRequest("deleteRecPost")
+    }
+
+    /**
+     * API Endpoint: Toggle isActive on a recruitment post
+     * URL: /recInterviewSchedule/isActivePost
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "ActiveId": 1 }
+     */
+    def isActivePost() {
+        processRequest("togglePostActive")
+    }
 }

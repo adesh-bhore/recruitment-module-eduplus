@@ -1294,6 +1294,259 @@ class RecInterviewScheduleService {
 
     // ────────────────────────────────────────────────────────────────
 
+    // ── Post Management Service Methods ──────────────────────────────
+
+    /**
+     * Get all RecPost for org + designations + current rec versions
+     * Used by: GET /recInterviewSchedule/getRecPostList
+     */
+    def getRecPostList(hm, request) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def recallPost = RecPost.findAllByOrganization(org)
+            def recversionall = RecVersion.findAllByOrganizationAndIscurrentforbackendprocessing(org, true)
+            def designationList = Designation.findAllByOrganization(org)
+
+            hm.recallPost = recallPost.collect { p ->
+                def designationData = null
+                try {
+                    designationData = p.designation ? [id: p.designation.id, name: p.designation.name] : null
+                } catch (Exception e) {
+                    println("Warning: Could not load designation for post ID ${p.id}: ${e.message}")
+                }
+                
+                [
+                    id          : p.id,
+                    isactive    : p.isactive,
+                    recversion  : p.recversion ? [id: p.recversion.id, version_number: p.recversion.version_number] : null,
+                    designation : designationData
+                ]
+            }
+
+            hm.recversionall = recversionall.collect { rv ->
+                [id: rv.id, version_number: rv.version_number, version_date: rv.version_date]
+            }
+
+            hm.designation = designationList.collect { d ->
+                [id: d.id, name: d.name]
+            }
+
+            hm.msg  = "Post list fetched successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in getRecPostList: ${e.message}", e)
+            hm.msg  = "Error fetching post list: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Create a new RecPost (duplicate check by org + version + designation)
+     * Used by: POST /recInterviewSchedule/saverecPost
+     */
+    def saveRecPost(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def recverId      = data.recver
+            def designationId = data.designation
+
+            if (!recverId || !designationId) {
+                hm.msg = "recver and designation are required"
+                hm.flag = false
+                return
+            }
+
+            RecVersion recversion = RecVersion.get(recverId)
+            if (!recversion) { hm.msg = "Recruitment Version not found"; hm.flag = false; return }
+
+            Designation designation = Designation.get(designationId)
+            if (!designation) { hm.msg = "Designation not found"; hm.flag = false; return }
+
+            // Duplicate check
+            RecPost existing = RecPost.findByOrganizationAndRecversionAndDesignation(org, recversion, designation)
+            if (existing) {
+                hm.msg  = "Post already exists"
+                hm.flag = false
+                return
+            }
+
+            def loginId = request.getHeader("EPC-UID")
+            Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+
+            RecPost recPost = new RecPost(
+                recversion          : recversion,
+                designation         : designation,
+                organization        : org,
+                isactive            : true,
+                username            : login?.username,
+                creation_ip_address : request.getRemoteAddr(),
+                creation_date       : new Date(),
+                updation_ip_address : request.getRemoteAddr(),
+                updation_date       : new Date()
+            )
+            recPost.save(failOnError: true, flush: true)
+
+            hm.msg  = "Saved successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in saveRecPost: ${e.message}", e)
+            hm.msg  = "Error saving post: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Update an existing RecPost
+     * Used by: POST /recInterviewSchedule/editRecPost
+     */
+    def editRecPost(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def editId        = data.editId
+            def designationId = data.designation
+
+            if (!editId) { hm.msg = "editId is required"; hm.flag = false; return }
+
+            RecPost recPost = RecPost.get(editId)
+            if (!recPost) {
+                hm.msg  = "Post not found"
+                hm.flag = false
+                return
+            }
+
+            Designation designation = designationId ? Designation.get(designationId) : recPost.designation
+
+            def loginId = request.getHeader("EPC-UID")
+            Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+
+            recPost.designation         = designation
+            recPost.organization        = org
+            recPost.isactive            = true
+            recPost.username            = login?.username
+            recPost.updation_ip_address = request.getRemoteAddr()
+            recPost.updation_date       = new Date()
+            recPost.save(failOnError: true, flush: true)
+
+            hm.msg  = "Updated successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in editRecPost: ${e.message}", e)
+            hm.msg  = "Error updating post: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Delete a RecPost (fails gracefully if in use by FK constraint)
+     * Used by: POST /recInterviewSchedule/deleterecPost
+     */
+    def deleteRecPost(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def brcid = data.brcid
+            if (!brcid) { hm.msg = "brcid is required"; hm.flag = false; return }
+
+            RecPost recPost = RecPost.get(brcid)
+            if (!recPost) {
+                hm.msg  = "Post not found"
+                hm.flag = false
+                return
+            }
+
+            try {
+                recPost.delete(flush: true, failOnError: true)
+                hm.msg  = "Deleted successfully"
+                hm.flag = true
+            } catch (Exception ex) {
+                hm.msg  = "Cannot be deleted. Post may be in use."
+                hm.flag = false
+            }
+
+        } catch (Exception e) {
+            log.error("Error in deleteRecPost: ${e.message}", e)
+            hm.msg  = "Error deleting post: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Toggle isActive on a RecPost
+     * Used by: POST /recInterviewSchedule/isActivePost
+     */
+    def togglePostActive(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def activeId = data.ActiveId
+            if (!activeId) { hm.msg = "ActiveId is required"; hm.flag = false; return }
+
+            RecPost recPost = RecPost.get(activeId)
+            if (!recPost) {
+                hm.msg  = "Post not found"
+                hm.flag = false
+                return
+            }
+
+            recPost.isactive            = !recPost.isactive
+            recPost.updation_ip_address = request.getRemoteAddr()
+            recPost.updation_date       = new Date()
+            recPost.save(flush: true, failOnError: true)
+
+            hm.isactive = recPost.isactive
+            hm.msg      = "Status updated successfully"
+            hm.flag     = true
+
+        } catch (Exception e) {
+            log.error("Error in togglePostActive: ${e.message}", e)
+            hm.msg  = "Error updating post status: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────
+
     /**
      * Helper method to generate HTML email content for interview call letter
      */
