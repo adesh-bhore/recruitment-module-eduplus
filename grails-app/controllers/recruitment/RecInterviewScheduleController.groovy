@@ -346,3 +346,60 @@ class RecInterviewScheduleController {
         processRequest("deleteAssignPost")
     }
 }
+
+    // ── Document Type Management APIs ────────────────────────────────
+
+    /**
+     * API Endpoint: Get all document types
+     * URL: /recInterviewSchedule/getRecDocumentTypeList
+     * Method: GET
+     * Headers: EPC-UID
+     */
+    def getRecDocumentTypeList() {
+        processRequestWithoutParams("getRecDocumentTypeList")
+    }
+
+    /**
+     * API Endpoint: Save new document type
+     * URL: /recInterviewSchedule/saveRecDocumentType
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "type": "Aadhar Card", "size": "2MB", "extension": "pdf,jpg", "info": "Upload Aadhar", "resolution": "300dpi", "isactive": true, "iscompulsory": true }
+     */
+    def saveRecDocumentType() {
+        processRequest("saveRecDocumentType")
+    }
+
+    /**
+     * API Endpoint: Edit existing document type
+     * URL: /recInterviewSchedule/editRecDocumentType
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "editId": 1, "type": "Updated Name", "size": "5MB", "extension": "pdf", "info": "Updated info", "resolution": "600dpi", "isactive": true, "iscompulsory": false }
+     */
+    def editRecDocumentType() {
+        processRequest("editRecDocumentType")
+    }
+
+    /**
+     * API Endpoint: Delete document type
+     * URL: /recInterviewSchedule/deleteRecDocumentType
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "deleteId": 1 }
+     */
+    def deleteRecDocumentType() {
+        processRequest("deleteRecDocumentType")
+    }
+
+    /**
+     * API Endpoint: Toggle isActive on a document type
+     * URL: /recInterviewSchedule/isActiveDocumentType
+     * Method: POST
+     * Headers: EPC-UID
+     * Body: { "ActiveId": 1 }
+     */
+    def isActiveDocumentType() {
+        processRequest("toggleDocumentTypeActive")
+    }
+}

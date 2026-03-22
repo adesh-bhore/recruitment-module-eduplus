@@ -1795,3 +1795,505 @@ class RecInterviewScheduleService {
         return html
     }
 }
+
+// ── Document Type Management Service Methods ─────────────────────
+
+/**
+ * Get all RecDocumentType
+ * Used by: GET /recInterviewSchedule/getRecDocumentTypeList
+ */
+def getRecDocumentTypeList(hm, request) {
+    try {
+        def inst = hm.remove("inst")
+        def org  = hm.remove("org")
+
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
+
+        def documentTypeList = RecDocumentType.list()
+
+        hm.documentTypeList = documentTypeList.collect { dt ->
+            [
+                id           : dt.id,
+                type         : dt.type,
+                size         : dt.size,
+                extension    : dt.extension,
+                info         : dt.info,
+                resolution   : dt.resolution,
+                isactive     : dt.isactive,
+                iscompulsory : dt.iscompulsory
+            ]
+        }
+
+        hm.msg  = "Document type list fetched successfully"
+        hm.flag = true
+
+    } catch (Exception e) {
+        log.error("Error in getRecDocumentTypeList: ${e.message}", e)
+        hm.msg  = "Error fetching document type list: ${e.message}"
+        hm.flag = false
+    }
+}
+
+/**
+ * Create a new RecDocumentType (duplicate check by type)
+ * Used by: POST /recInterviewSchedule/saveRecDocumentType
+ */
+def saveRecDocumentType(hm, request, data) {
+    try {
+        def inst = hm.remove("inst")
+        def org  = hm.remove("org")
+
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
+
+        def type       = data.type?.toString()?.trim()
+        def size       = data.size?.toString()?.trim()
+        def extension  = data.extension?.toString()?.trim()
+        def info       = data.info?.toString()?.trim()
+        def resolution = data.resolution?.toString()?.trim()
+        def isactive   = data.isactive != null ? data.isactive : true
+        def iscompulsory = data.iscompulsory != null ? data.iscompulsory : true
+
+        if (!type) {
+            hm.msg = "type is required"
+            hm.flag = false
+            return
+        }
+
+        // Duplicate check
+        RecDocumentType existing = RecDocumentType.findByType(type)
+        if (existing) {
+            hm.msg  = "Document type already exists"
+            hm.flag = false
+            return
+        }
+
+        def loginId = request.getHeader("EPC-UID")
+        Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+
+        RecDocumentType recDocumentType = new RecDocumentType(
+            type                : type,
+            size                : size,
+            extension           : extension,
+            info                : info,
+            resolution          : resolution,
+            isactive            : isactive,
+            iscompulsory        : iscompulsory,
+            username            : login?.username,
+            creation_ip_address : request.getRemoteAddr(),
+            creation_date       : new Date(),
+            updation_ip_address : request.getRemoteAddr(),
+            updation_date       : new Date()
+        )
+        recDocumentType.save(failOnError: true, flush: true)
+
+        hm.msg  = "Saved successfully"
+        hm.flag = true
+
+    } catch (Exception e) {
+        log.error("Error in saveRecDocumentType: ${e.message}", e)
+        hm.msg  = "Error saving document type: ${e.message}"
+        hm.flag = false
+    }
+}
+
+/**
+ * Update an existing RecDocumentType
+ * Used by: POST /recInterviewSchedule/editRecDocumentType
+ */
+def editRecDocumentType(hm, request, data) {
+    try {
+        def inst = hm.remove("inst")
+        def org  = hm.remove("org")
+
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
+
+        def editId     = data.editId
+        def type       = data.type?.toString()?.trim()
+        def size       = data.size?.toString()?.trim()
+        def extension  = data.extension?.toString()?.trim()
+        def info       = data.info?.toString()?.trim()
+        def resolution = data.resolution?.toString()?.trim()
+        def isactive   = data.isactive
+        def iscompulsory = data.iscompulsory
+
+        if (!editId) { hm.msg = "editId is required"; hm.flag = false; return }
+
+        RecDocumentType recDocumentType = RecDocumentType.get(editId)
+        if (!recDocumentType) {
+            hm.msg  = "Document type not found"
+            hm.flag = false
+            return
+        }
+
+        def loginId = request.getHeader("EPC-UID")
+        Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+
+        recDocumentType.type                = type ?: recDocumentType.type
+        recDocumentType.size                = size ?: recDocumentType.size
+        recDocumentType.extension           = extension ?: recDocumentType.extension
+        recDocumentType.info                = info ?: recDocumentType.info
+        recDocumentType.resolution          = resolution ?: recDocumentType.resolution
+        recDocumentType.isactive            = isactive != null ? isactive : recDocumentType.isactive
+        recDocumentType.iscompulsory        = iscompulsory != null ? iscompulsory : recDocumentType.iscompulsory
+        recDocumentType.username            = login?.username
+        recDocumentType.updation_ip_address = request.getRemoteAddr()
+        recDocumentType.updation_date       = new Date()
+        recDocumentType.save(failOnError: true, flush: true)
+
+        hm.msg  = "Updated successfully"
+        hm.flag = true
+
+    } catch (Exception e) {
+        log.error("Error in editRecDocumentType: ${e.message}", e)
+        hm.msg  = "Error updating document type: ${e.message}"
+        hm.flag = false
+    }
+}
+
+/**
+ * Delete a RecDocumentType (fails gracefully if in use by FK constraint)
+ * Used by: POST /recInterviewSchedule/deleteRecDocumentType
+ */
+def deleteRecDocumentType(hm, request, data) {
+    try {
+        def inst = hm.remove("inst")
+        def org  = hm.remove("org")
+
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
+
+        def deleteId = data.deleteId
+        if (!deleteId) { hm.msg = "deleteId is required"; hm.flag = false; return }
+
+        RecDocumentType recDocumentType = RecDocumentType.get(deleteId)
+        if (!recDocumentType) {
+            hm.msg  = "Document type not found"
+            hm.flag = false
+            return
+        }
+
+        try {
+            recDocumentType.delete(flush: true, failOnError: true)
+            hm.msg  = "Deleted successfully"
+            hm.flag = true
+        } catch (Exception ex) {
+            hm.msg  = "Cannot be deleted. Document type may be in use."
+            hm.flag = false
+        }
+
+    } catch (Exception e) {
+        log.error("Error in deleteRecDocumentType: ${e.message}", e)
+        hm.msg  = "Error deleting document type: ${e.message}"
+        hm.flag = false
+    }
+}
+
+/**
+ * Toggle isActive on a RecDocumentType
+ * Used by: POST /recInterviewSchedule/isActiveDocumentType
+ */
+def toggleDocumentTypeActive(hm, request, data) {
+    try {
+        def inst = hm.remove("inst")
+        def org  = hm.remove("org")
+
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
+
+        def activeId = data.ActiveId
+        if (!activeId) { hm.msg = "ActiveId is required"; hm.flag = false; return }
+
+        RecDocumentType recDocumentType = RecDocumentType.get(activeId)
+        if (!recDocumentType) {
+            hm.msg  = "Document type not found"
+            hm.flag = false
+            return
+        }
+
+        recDocumentType.isactive            = !recDocumentType.isactive
+        recDocumentType.updation_ip_address = request.getRemoteAddr()
+        recDocumentType.updation_date       = new Date()
+        recDocumentType.save(flush: true, failOnError: true)
+
+        hm.isactive = recDocumentType.isactive
+        hm.msg      = "Status updated successfully"
+        hm.flag     = true
+
+    } catch (Exception e) {
+        log.error("Error in toggleDocumentTypeActive: ${e.message}", e)
+        hm.msg  = "Error updating document type status: ${e.message}"
+        hm.flag = false
+    }
+}
+
+// ────────────────────────────────────────────────────────────────
+
+
+    // ── Document Type Management Service Methods ─────────────────────
+
+    /**
+     * Get all RecDocumentType
+     * Used by: GET /recInterviewSchedule/getRecDocumentTypeList
+     */
+    def getRecDocumentTypeList(hm, request) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def documentTypeList = RecDocumentType.list()
+
+            hm.documentTypeList = documentTypeList.collect { dt ->
+                [
+                    id           : dt.id,
+                    type         : dt.type,
+                    size         : dt.size,
+                    extension    : dt.extension,
+                    info         : dt.info,
+                    resolution   : dt.resolution,
+                    isactive     : dt.isactive,
+                    iscompulsory : dt.iscompulsory
+                ]
+            }
+
+            hm.msg  = "Document type list fetched successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in getRecDocumentTypeList: ${e.message}", e)
+            hm.msg  = "Error fetching document type list: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Create a new RecDocumentType (duplicate check by type)
+     * Used by: POST /recInterviewSchedule/saveRecDocumentType
+     */
+    def saveRecDocumentType(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def type       = data.type?.toString()?.trim()
+            def size       = data.size?.toString()?.trim()
+            def extension  = data.extension?.toString()?.trim()
+            def info       = data.info?.toString()?.trim()
+            def resolution = data.resolution?.toString()?.trim()
+            def isactive   = data.isactive != null ? data.isactive : true
+            def iscompulsory = data.iscompulsory != null ? data.iscompulsory : true
+
+            if (!type) {
+                hm.msg = "type is required"
+                hm.flag = false
+                return
+            }
+
+            // Duplicate check
+            RecDocumentType existing = RecDocumentType.findByType(type)
+            if (existing) {
+                hm.msg  = "Document type already exists"
+                hm.flag = false
+                return
+            }
+
+            def loginId = request.getHeader("EPC-UID")
+            Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+
+            RecDocumentType recDocumentType = new RecDocumentType(
+                type                : type,
+                size                : size,
+                extension           : extension,
+                info                : info,
+                resolution          : resolution,
+                isactive            : isactive,
+                iscompulsory        : iscompulsory,
+                username            : login?.username,
+                creation_ip_address : request.getRemoteAddr(),
+                creation_date       : new Date(),
+                updation_ip_address : request.getRemoteAddr(),
+                updation_date       : new Date()
+            )
+            recDocumentType.save(failOnError: true, flush: true)
+
+            hm.msg  = "Saved successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in saveRecDocumentType: ${e.message}", e)
+            hm.msg  = "Error saving document type: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Update an existing RecDocumentType
+     * Used by: POST /recInterviewSchedule/editRecDocumentType
+     */
+    def editRecDocumentType(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def editId     = data.editId
+            def type       = data.type?.toString()?.trim()
+            def size       = data.size?.toString()?.trim()
+            def extension  = data.extension?.toString()?.trim()
+            def info       = data.info?.toString()?.trim()
+            def resolution = data.resolution?.toString()?.trim()
+            def isactive   = data.isactive
+            def iscompulsory = data.iscompulsory
+
+            if (!editId) { hm.msg = "editId is required"; hm.flag = false; return }
+
+            RecDocumentType recDocumentType = RecDocumentType.get(editId)
+            if (!recDocumentType) {
+                hm.msg  = "Document type not found"
+                hm.flag = false
+                return
+            }
+
+            def loginId = request.getHeader("EPC-UID")
+            Login login = Login.findByUsernameAndIsloginblocked(loginId, false)
+
+            recDocumentType.type                = type ?: recDocumentType.type
+            recDocumentType.size                = size ?: recDocumentType.size
+            recDocumentType.extension           = extension ?: recDocumentType.extension
+            recDocumentType.info                = info ?: recDocumentType.info
+            recDocumentType.resolution          = resolution ?: recDocumentType.resolution
+            recDocumentType.isactive            = isactive != null ? isactive : recDocumentType.isactive
+            recDocumentType.iscompulsory        = iscompulsory != null ? iscompulsory : recDocumentType.iscompulsory
+            recDocumentType.username            = login?.username
+            recDocumentType.updation_ip_address = request.getRemoteAddr()
+            recDocumentType.updation_date       = new Date()
+            recDocumentType.save(failOnError: true, flush: true)
+
+            hm.msg  = "Updated successfully"
+            hm.flag = true
+
+        } catch (Exception e) {
+            log.error("Error in editRecDocumentType: ${e.message}", e)
+            hm.msg  = "Error updating document type: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Delete a RecDocumentType (fails gracefully if in use by FK constraint)
+     * Used by: POST /recInterviewSchedule/deleteRecDocumentType
+     */
+    def deleteRecDocumentType(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def deleteId = data.deleteId
+            if (!deleteId) { hm.msg = "deleteId is required"; hm.flag = false; return }
+
+            RecDocumentType recDocumentType = RecDocumentType.get(deleteId)
+            if (!recDocumentType) {
+                hm.msg  = "Document type not found"
+                hm.flag = false
+                return
+            }
+
+            try {
+                recDocumentType.delete(flush: true, failOnError: true)
+                hm.msg  = "Deleted successfully"
+                hm.flag = true
+            } catch (Exception ex) {
+                hm.msg  = "Cannot be deleted. Document type may be in use."
+                hm.flag = false
+            }
+
+        } catch (Exception e) {
+            log.error("Error in deleteRecDocumentType: ${e.message}", e)
+            hm.msg  = "Error deleting document type: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    /**
+     * Toggle isActive on a RecDocumentType
+     * Used by: POST /recInterviewSchedule/isActiveDocumentType
+     */
+    def toggleDocumentTypeActive(hm, request, data) {
+        try {
+            def inst = hm.remove("inst")
+            def org  = hm.remove("org")
+
+            if (!inst || !org) {
+                hm.msg = "Instructor or Organization not found"
+                hm.flag = false
+                return
+            }
+
+            def activeId = data.ActiveId
+            if (!activeId) { hm.msg = "ActiveId is required"; hm.flag = false; return }
+
+            RecDocumentType recDocumentType = RecDocumentType.get(activeId)
+            if (!recDocumentType) {
+                hm.msg  = "Document type not found"
+                hm.flag = false
+                return
+            }
+
+            recDocumentType.isactive            = !recDocumentType.isactive
+            recDocumentType.updation_ip_address = request.getRemoteAddr()
+            recDocumentType.updation_date       = new Date()
+            recDocumentType.save(flush: true, failOnError: true)
+
+            hm.isactive = recDocumentType.isactive
+            hm.msg      = "Status updated successfully"
+            hm.flag     = true
+
+        } catch (Exception e) {
+            log.error("Error in toggleDocumentTypeActive: ${e.message}", e)
+            hm.msg  = "Error updating document type status: ${e.message}"
+            hm.flag = false
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────
+}
