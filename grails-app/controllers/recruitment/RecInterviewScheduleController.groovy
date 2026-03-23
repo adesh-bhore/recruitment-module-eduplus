@@ -15,39 +15,49 @@ class RecInterviewScheduleController {
         return
     }
 
-    def processRequest(serviceMethod) {
+    def processRequest(serviceMethod, serviceInstance) {
         println("Processing request for: ${serviceMethod}")
 
         HashMap hm = new HashMap()
         hm.putAll(commonData(request))
         hm.put("msg", "Failed!!!")
         hm.put("flag", false)
-        RecInterviewScheduleService service = new RecInterviewScheduleService()
-        service."${serviceMethod}"(hm, request, request.JSON)
+        serviceInstance."${serviceMethod}"(hm, request, request.JSON)
         render hm as JSON
     }
 
-    def processRequestWithoutParams(String methodName) {
+    def processRequestWithoutParams(String methodName, serviceInstance) {
         println("In $methodName")
         HashMap hm = new HashMap()
         hm.putAll(commonData(request))
         hm.put("msg", "Failed!!!")
         hm.put("flag", false)
-        RecInterviewScheduleService service = new RecInterviewScheduleService()
-        service."$methodName"(hm, request)
+        serviceInstance."$methodName"(hm, request)
         render hm as JSON
     }
     
-    def processRequestWithEmail(serviceMethod) {
+    def processRequestWithEmail(serviceMethod, serviceInstance) {
         println("Processing request for: ${serviceMethod}")
 
         HashMap hm = new HashMap()
         hm.putAll(commonData(request))
         hm.put("msg", "Failed!!!")
         hm.put("flag", false)
-        RecInterviewScheduleService service = new RecInterviewScheduleService()
-        service."${serviceMethod}"(hm, request, request.JSON, sendMailService)
+        serviceInstance."${serviceMethod}"(hm, request, request.JSON, sendMailService)
         render hm as JSON
+    }
+    
+    // Helper method to get service instances
+    private def getServiceNew() {
+        return new RecInterviewScheduleService_NEW()
+    }
+    
+    private def getService2() {
+        return new RecInterviewScheduleService_2()
+    }
+    
+    private def getService3() {
+        return new RecInterviewScheduleService_3()
     }
 
     def commonData(request) {
@@ -76,7 +86,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with interview schedules, academic years, organizations, versions, departments, posts
      */
     def getinterviewschedule() {
-        processRequestWithoutParams("getInterviewScheduleList")
+        processRequestWithoutParams("getInterviewScheduleList", getServiceNew())
     }
 
     /**
@@ -88,7 +98,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with list of recruitment versions
      */
     def getRecVersion() {
-        processRequest("getRecVersion")
+        processRequest("getRecVersion", getServiceNew())
     }
 
     /**
@@ -100,7 +110,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with list of departments
      */
     def getDept() {
-        processRequest("getDept")
+        processRequest("getDept", getServiceNew())
     }
 
     /**
@@ -112,7 +122,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with list of posts
      */
     def getPost() {
-        processRequest("getPost")
+        processRequest("getPost", getServiceNew())
     }
 
     /**
@@ -124,7 +134,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with list of interview schedules
      */
     def getInterviewList() {
-        processRequest("getInterviewList")
+        processRequest("getInterviewList", getServiceNew())
     }
 
     /**
@@ -144,7 +154,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with saved schedule details
      */
     def saveinterviewschedule() {
-        processRequest("saveInterviewSchedule")
+        processRequest("saveInterviewSchedule", getServiceNew())
     }
 
     /**
@@ -161,7 +171,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with updated schedule details
      */
     def editinterviewschedule() {
-        processRequest("editInterviewSchedule")
+        processRequest("editInterviewSchedule", getServiceNew())
     }
 
     /**
@@ -173,7 +183,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with success/failure message
      */
     def deletesched() {
-        processRequest("deleteSched")
+        processRequest("deleteSched", getServiceNew())
     }
 
     /**
@@ -185,7 +195,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with email sending statistics (emailsSent, emailsFailed, failedEmails)
      */
     def sendmail() {
-        processRequestWithEmail("sendInterviewCallLetters")
+        processRequestWithEmail("sendInterviewCallLetters", getServiceNew())
     }
 
     /**
@@ -197,7 +207,7 @@ class RecInterviewScheduleController {
      * Returns: JSON with list of candidates and their interview details
      */
     def preview_callletter() {
-        processRequest("previewCallLetters")
+        processRequest("previewCallLetters", getServiceNew())
     }
 
     // ── Branch APIs ──────────────────────────────────────────────────
@@ -209,7 +219,7 @@ class RecInterviewScheduleController {
      * Headers: EPC-UID
      */
     def getRecBranchList() {
-        processRequestWithoutParams("getRecBranchList")
+        processRequestWithoutParams("getRecBranchList", getService2())
     }
 
     /**
@@ -220,7 +230,7 @@ class RecInterviewScheduleController {
      * Body: { "recver": 1, "program": 1, "recbranch": "CSE", "recbranchabbr": "CSE" }
      */
     def saverecBranch() {
-        processRequest("saveRecBranch")
+        processRequest("saveRecBranch", getService2())
     }
 
     /**
@@ -231,7 +241,7 @@ class RecInterviewScheduleController {
      * Body: { "editId": 1, "program": 1, "recbranch": "Updated Name", "recbranchabbr": "UPD" }
      */
     def editRecBranch() {
-        processRequest("editRecBranch")
+        processRequest("editRecBranch", getService2())
     }
 
     /**
@@ -242,7 +252,7 @@ class RecInterviewScheduleController {
      * Body: { "brcid": 1 }
      */
     def deleterecBranch() {
-        processRequest("deleteRecBranch")
+        processRequest("deleteRecBranch", getService2())
     }
 
     /**
@@ -253,7 +263,7 @@ class RecInterviewScheduleController {
      * Body: { "ActiveId": 1 }
      */
     def isActiveBranch() {
-        processRequest("toggleBranchActive")
+        processRequest("toggleBranchActive", getService2())
     }
 
     // ── Post Management APIs ─────────────────────────────────────────
@@ -265,7 +275,7 @@ class RecInterviewScheduleController {
      * Headers: EPC-UID
      */
     def getRecPostList() {
-        processRequestWithoutParams("getRecPostList")
+        processRequestWithoutParams("getRecPostList", getService2())
     }
 
     /**
@@ -276,7 +286,7 @@ class RecInterviewScheduleController {
      * Body: { "recver": 1, "designation": 1 }
      */
     def saverecPost() {
-        processRequest("saveRecPost")
+        processRequest("saveRecPost", getService2())
     }
 
     /**
@@ -287,7 +297,7 @@ class RecInterviewScheduleController {
      * Body: { "editId": 1, "designation": 2 }
      */
     def editRecPost() {
-        processRequest("editRecPost")
+        processRequest("editRecPost", getService2())
     }
 
     /**
@@ -298,7 +308,7 @@ class RecInterviewScheduleController {
      * Body: { "brcid": 1 }
      */
     def deleterecPost() {
-        processRequest("deleteRecPost")
+        processRequest("deleteRecPost", getService2())
     }
 
     /**
@@ -309,7 +319,7 @@ class RecInterviewScheduleController {
      * Body: { "ActiveId": 1 }
      */
     def isActivePost() {
-        processRequest("togglePostActive")
+        processRequest("togglePostActive", getService2())
     }
 
     // ── Post Assignment APIs ─────────────────────────────────────────
@@ -321,7 +331,7 @@ class RecInterviewScheduleController {
      * Headers: EPC-UID
      */
     def getAssignPostList() {
-        processRequestWithoutParams("getAssignPostList")
+        processRequestWithoutParams("getAssignPostList", getService2())
     }
 
     /**
@@ -332,7 +342,7 @@ class RecInterviewScheduleController {
      * Body: { "inst": 1, "post": 1 }
      */
     def saveassignPost() {
-        processRequest("saveAssignPost")
+        processRequest("saveAssignPost", getService2())
     }
 
     /**
@@ -343,7 +353,7 @@ class RecInterviewScheduleController {
      * Body: { "instid": 1, "postid": 1 }
      */
     def deleteassignPost() {
-        processRequest("deleteAssignPost")
+        processRequest("deleteAssignPost", getService2())
     }
 
     // ── Document Type Management APIs ────────────────────────────────
@@ -355,7 +365,7 @@ class RecInterviewScheduleController {
      * Headers: EPC-UID
      */
     def getRecDocumentTypeList() {
-        processRequestWithoutParams("getRecDocumentTypeList")
+        processRequestWithoutParams("getRecDocumentTypeList", getService3())
     }
 
     /**
@@ -366,7 +376,7 @@ class RecInterviewScheduleController {
      * Body: { "type": "Aadhar Card", "size": "2MB", "extension": "pdf,jpg", "info": "Upload Aadhar", "resolution": "300dpi", "isactive": true, "iscompulsory": true }
      */
     def saveRecDocumentType() {
-        processRequest("saveRecDocumentType")
+        processRequest("saveRecDocumentType", getService3())
     }
 
     /**
@@ -377,7 +387,7 @@ class RecInterviewScheduleController {
      * Body: { "editId": 1, "type": "Updated Name", "size": "5MB", "extension": "pdf", "info": "Updated info", "resolution": "600dpi", "isactive": true, "iscompulsory": false }
      */
     def editRecDocumentType() {
-        processRequest("editRecDocumentType")
+        processRequest("editRecDocumentType", getService3())
     }
 
     /**
@@ -388,7 +398,7 @@ class RecInterviewScheduleController {
      * Body: { "deleteId": 1 }
      */
     def deleteRecDocumentType() {
-        processRequest("deleteRecDocumentType")
+        processRequest("deleteRecDocumentType", getService3())
     }
 
     /**
@@ -399,7 +409,7 @@ class RecInterviewScheduleController {
      * Body: { "ActiveId": 1 }
      */
     def isActiveDocumentType() {
-        processRequest("toggleDocumentTypeActive")
+        processRequest("toggleDocumentTypeActive", getService3())
     }
 
     // ── Document Viewing APIs ────────────────────────────────────────
@@ -411,7 +421,7 @@ class RecInterviewScheduleController {
      * Headers: EPC-UID
      */
     def recdocumentList() {
-        processRequestWithoutParams("getRecDocumentList")
+        processRequestWithoutParams("getRecDocumentList", getService3())
     }
 
     /**
@@ -422,7 +432,7 @@ class RecInterviewScheduleController {
      * Body: { "recapcntid": 1 }
      */
     def getdoc() {
-        processRequest("getApplicantDocuments")
+        processRequest("getApplicantDocuments", getService3())
     }
 
     /**
@@ -432,6 +442,6 @@ class RecInterviewScheduleController {
      * Headers: EPC-UID
      */
     def getDocumentStatistics() {
-        processRequestWithoutParams("getDocumentStatistics")
+        processRequestWithoutParams("getDocumentStatistics", getService3())
     }
 }

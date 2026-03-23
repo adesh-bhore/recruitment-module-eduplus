@@ -106,6 +106,10 @@ class Instructor implements Auditable{
     String nominee_filepath
 
 
+    static hasMany = [
+            erpfacultypost: ERPFacultyPost
+    ]
+
     static belongsTo=[
             person:Person,
             organization:Organization,
