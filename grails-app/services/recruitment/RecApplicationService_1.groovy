@@ -4,6 +4,9 @@ import grails.gorm.transactions.Transactional
 import java.text.SimpleDateFormat
 import javax.servlet.http.Part
 import common.AWSUploadDocumentsService
+import common.AWSBucketService
+import java.time.LocalDate
+import java.time.Period
 
 @Transactional
 class RecApplicationService_1 {
@@ -1174,6 +1177,315 @@ class RecApplicationService_1 {
         } catch (Exception e) {
             println("Error in getApplicantPhoto: ${e.message}")
             hm.msg = "Error fetching photo: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 3: Application Preview & PDF Data APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Get application preview data (for PDF generation or display)
+     * Used by: GET /recApplication/getApplicationPreview
+     */
+    def getApplicationPreview(hm, request) {
+        try {
+            def uid = hm.remove("uid")
+            def applicationId = hm.remove("applicationId")
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            if (!applicationId) {
+                hm.msg = "Application ID not provided"
+                hm.flag = false
+                return
+            }
+            
+            RecApplication recapp = RecApplication.findById(applicationId)
+            if (!recapp) {
+                hm.msg = "Application not found"
+                hm.flag = false
+                return
+            }
+            
+            // Verify ownership (applicant can view their own application)
+            RecApplicant loggedInApplicant = RecApplicant.findByEmail(uid)
+            if (loggedInApplicant && recapp.recapplicant.id != loggedInApplicant.id) {
+                hm.msg = "Unauthorized access"
+                hm.flag = false
+                return
+            }
+            
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
+            
+            // Calculate age
+            def age = 0
+            if (recapp.recapplicant.dateofbirth) {
+                Date input = recapp.recapplicant.dateofbirth
+                LocalDate today = LocalDate.now()
+                LocalDate birthday = new java.sql.Date(input.getTime()).toLocalDate()
+                Period p = Period.between(birthday, today)
+                age = p.getYears()
+            }
+            
+            // Application basic info
+            hm.application = [
+                id: recapp.id,
+                applicaitionid: recapp.applicaitionid,
+                applicationdate: recapp.applicationdate ? df.format(recapp.applicationdate) : null,
+                place: recapp.place,
+                isfeespaid: recapp.isfeespaid,
+                feesreceiptid: recapp.feesreceiptid,
+                amount: recapp.amount
+            ]
+            
+            // Version info
+            hm.version = [
+                id: recapp.recversion.id,
+                version_number: recapp.recversion.version_number,
+                version_date: df.format(recapp.recversion.version_date)
+            ]
+            
+            // Organization info
+            hm.organization = [
+                id: recapp.organization.id,
+                name: recapp.organization.organization_name
+            ]
+            
+            // Applicant info
+            hm.applicant = [
+                id: recapp.recapplicant.id,
+                email: recapp.recapplicant.email,
+                fullname: recapp.recapplicant.fullname,
+                dateofbirth: recapp.recapplicant.dateofbirth ? df.format(recapp.recapplicant.dateofbirth) : null,
+                age: age,
+                mobilenumber: recapp.recapplicant.mobilenumber,
+                cast: recapp.recapplicant.cast,
+                pancardno: recapp.recapplicant.pancardno,
+                aadhaarcardno: recapp.recapplicant.aadhaarcardno,
+                area_of_specialization: recapp.recapplicant.area_of_specialization,
+                any_other_info_related_to_post: recapp.recapplicant.any_other_info_related_to_post,
+                present_salary: recapp.recapplicant.present_salary,
+                ishandicapped: recapp.recapplicant.ishandicapped,
+                category: recapp.recapplicant.reccategory?.name,
+                maritalstatus: recapp.recapplicant.maritalstatus?.name,
+                salutation: recapp.recapplicant.salutation?.name,
+                minority: recapp.recapplicant.minoritytypedetails?.name,
+                gender: recapp.recapplicant.gender?.type
+            ]
+            
+            // Posts
+            hm.posts = recapp.recpost?.collect { p ->
+                [
+                    id: p.id,
+                    designation: p.designation?.name
+                ]
+            } ?: []
+            
+            // Branches
+            hm.branches = recapp.recbranch?.collect { b ->
+                [
+                    id: b.id,
+                    name: b.name,
+                    branch_abbrivation: b.branch_abbrivation,
+                    program: b.program?.name
+                ]
+            } ?: []
+            
+            // Addresses
+            AddressType permanentAddressType = AddressType.findByType("Permanent")
+            AddressType localAddressType = AddressType.findByType("Local")
+            def permanentaddress = Address.findByRecapplicantAndAddresstype(recapp.recapplicant, permanentAddressType)
+            def localaddress = Address.findByRecapplicantAndAddresstype(recapp.recapplicant, localAddressType)
+            
+            hm.permanentAddress = permanentaddress ? [
+                address: permanentaddress.address,
+                taluka: permanentaddress.taluka,
+                pin: permanentaddress.pin,
+                country: permanentaddress.country?.name,
+                state: permanentaddress.state?.state,
+                district: permanentaddress.district?.district,
+                city: permanentaddress.city?.city
+            ] : null
+            
+            hm.localAddress = localaddress ? [
+                address: localaddress.address,
+                taluka: localaddress.taluka,
+                pin: localaddress.pin,
+                country: localaddress.country?.name,
+                state: localaddress.state?.state,
+                district: localaddress.district?.district,
+                city: localaddress.city?.city
+            ] : null
+            
+            // Academic qualifications
+            def academics = RecApplicantAcademics.findAllByRecapplicant(recapp.recapplicant)
+            hm.academics = academics.collect { ac ->
+                [
+                    degree: ac.recdegree?.name,
+                    name_of_degree: ac.name_of_degree,
+                    yearofpassing: ac.yearofpassing,
+                    university: ac.university,
+                    branch: ac.branch,
+                    cpi_marks: ac.cpi_marks,
+                    degree_status: ac.recdegreestatus?.name
+                ]
+            }
+            
+            // Experience
+            RecExperienceType teachingexptype = RecExperienceType.findByTypeAndIsactive("Teaching", true)
+            RecExperienceType industryexptype = RecExperienceType.findByTypeAndIsactive("Industrial/Research", true)
+            RecExperienceType nonteachingexptype = RecExperienceType.findByTypeAndIsactive("Non-Teaching", true)
+            
+            RecExperience teachingexp = RecExperience.findByRecexperiencetypeAndRecapplicant(teachingexptype, recapp.recapplicant)
+            RecExperience industryexp = RecExperience.findByRecexperiencetypeAndRecapplicant(industryexptype, recapp.recapplicant)
+            RecExperience nonteachingexp = RecExperience.findByRecexperiencetypeAndRecapplicant(nonteachingexptype, recapp.recapplicant)
+            
+            hm.teachingExperience = teachingexp ? [years: teachingexp.years, months: teachingexp.months] : null
+            hm.industryExperience = industryexp ? [years: industryexp.years, months: industryexp.months] : null
+            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.years, months: nonteachingexp.months] : null
+            
+            // Documents with presigned URLs
+            def docs = RecApplicantDocument.findAllByRecapplicant(recapp.recapplicant)
+            AWSBucket awsBucket = AWSBucket.findByContent("documents")
+            AWSFolderPath awsFolderPath = AWSFolderPath.findById(5)
+            AWSBucketService awsBucketService = new AWSBucketService()
+            
+            hm.documents = docs.collect { rd ->
+                def docUrl = null
+                if (rd.filepath && rd.filename && awsBucket && awsFolderPath) {
+                    def path = awsFolderPath.path + rd.filepath + rd.filename
+                    docUrl = awsBucketService.getPresignedUrl(awsBucket.bucketname, path, awsBucket.region)
+                }
+                [
+                    id: rd.id,
+                    documentType: rd.recdocumenttype?.type,
+                    filename: rd.filename,
+                    documentUrl: docUrl
+                ]
+            }
+            
+            // Photo URL
+            def photoUrl = null
+            if (recapp.recapplicant.photopath && recapp.recapplicant.photoname && awsBucket && awsFolderPath) {
+                def path = awsFolderPath.path + recapp.recapplicant.photopath + recapp.recapplicant.photoname
+                photoUrl = awsBucketService.getPresignedUrl(awsBucket.bucketname, path, awsBucket.region)
+            }
+            hm.photoUrl = photoUrl
+            
+            // Payment receipt (optional - don't fail if receipt data is incomplete)
+            hm.receipt = null
+            try {
+                def receipt = RecOnlineTransaction.findByRecapplication(recapp)
+                if (receipt) {
+                    hm.receipt = [
+                        id: receipt.id,
+                        erp_transaction_id: receipt.erp_transaction_id,
+                        paymentgateway_transaction_id: receipt.paymentgateway_transaction_id,
+                        bank_transaction_id: receipt.bank_transaction_id,
+                        amount: receipt.amount,
+                        received_amount: receipt.received_amount,
+                        request_transaction_date: receipt.request_transaction_date ? df.format(receipt.request_transaction_date) : null,
+                        response_transaction_date: receipt.response_transaction_date,
+                        bank_name: receipt.bank_name,
+                        payment_remark: receipt.payment_remark,
+                        transaction_status: null
+                    ]
+                }
+            } catch (Exception receiptEx) {
+                println("Warning: Could not load receipt data: ${receiptEx.message}")
+                hm.receipt = null
+            }
+            
+            hm.msg = "Application preview data fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getApplicationPreview: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching application preview: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Download document file (get presigned URL for download)
+     * Used by: GET /recApplication/downloadDocumentFile
+     */
+    def downloadDocumentFile(hm, request) {
+        try {
+            def uid = hm.remove("uid")
+            def documentId = hm.remove("documentId")
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            if (!documentId) {
+                hm.msg = "Document ID not provided"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicant recapplicant = RecApplicant.findByEmail(uid)
+            if (!recapplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicantDocument recdocument = RecApplicantDocument.findById(documentId)
+            if (!recdocument) {
+                hm.msg = "Document not found"
+                hm.flag = false
+                return
+            }
+            
+            // Verify ownership
+            if (recdocument.recapplicant.id != recapplicant.id) {
+                hm.msg = "Unauthorized access"
+                hm.flag = false
+                return
+            }
+            
+            // Get presigned URL from AWS S3
+            AWSBucket awsBucket = AWSBucket.findByContent("documents")
+            AWSFolderPath awsFolderPath = AWSFolderPath.findById(5)
+            
+            if (!awsBucket || !awsFolderPath) {
+                hm.msg = "AWS configuration not found"
+                hm.flag = false
+                return
+            }
+            
+            def path = awsFolderPath.path + recdocument.filepath + recdocument.filename
+            AWSBucketService awsBucketService = new AWSBucketService()
+            def presignedUrl = awsBucketService.getPresignedUrl(awsBucket.bucketname, path, awsBucket.region)
+            
+            if (!presignedUrl) {
+                hm.msg = "Failed to generate download URL"
+                hm.flag = false
+                return
+            }
+            
+            // Return presigned URL for direct download
+            hm.downloadUrl = presignedUrl
+            hm.filename = recdocument.filename
+            hm.contentType = recdocument.filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+            hm.msg = "Download URL generated successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in downloadDocumentFile: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error generating download URL: ${e.message}"
             hm.flag = false
         }
     }

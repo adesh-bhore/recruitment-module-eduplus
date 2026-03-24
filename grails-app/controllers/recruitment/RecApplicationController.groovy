@@ -240,4 +240,31 @@ class RecApplicationController {
     def getApplicantPhoto() {
         processRequestWithoutParams("getApplicantPhoto", getService1())
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 3: Application Preview & PDF Data APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 11: Get application preview data (for PDF generation or display)
+     * GET /recApplication/getApplicationPreview
+     * Headers: EPC-UID
+     * Query Params: applicationId (application ID)
+     */
+    def getApplicationPreview() {
+        processRequestWithoutParams("getApplicationPreview", getService1())
+    }
+    
+    /**
+     * API 12: Download document file (get presigned URL for direct download)
+     * GET /recApplication/downloadDocumentFile
+     * Headers: EPC-UID
+     * Query Params: documentId (document ID)
+     * 
+     * Note: This replaces old downloaddocuments() method
+     * Returns presigned AWS S3 URL for direct file download
+     */
+    def downloadDocumentFile() {
+        processRequestWithoutParams("downloadDocumentFile", getService1())
+    }
 }
