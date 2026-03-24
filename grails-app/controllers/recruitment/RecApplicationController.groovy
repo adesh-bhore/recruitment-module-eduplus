@@ -9,6 +9,10 @@ class RecApplicationController {
         return new RecApplicationService_1()
     }
     
+    private RecApplicationService_2 getService2() {
+        return new RecApplicationService_2()
+    }
+    
     /**
      * Common request processing with parameters from request body
      */
@@ -266,5 +270,69 @@ class RecApplicationController {
      */
     def downloadDocumentFile() {
         processRequestWithoutParams("downloadDocumentFile", getService1())
+    }
+
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 4: Admin - Application Listing & Filtering APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 13: Get authority applications
+     * GET /recApplication/getAuthorityApplications
+     * Headers: EPC-UID
+     */
+    def getAuthorityApplications() {
+        processRequestWithoutParams("getAuthorityApplications", getService2())
+    }
+    
+    /**
+     * API 14: Get application summary with filters
+     * GET /recApplication/getApplicationSummary
+     * Headers: EPC-UID
+     * Query Params: authorityType, recver, status, recbranch, recpost, fromdate, todate, page, pageSize
+     */
+    def getApplicationSummary() {
+        processRequestWithoutParams("getApplicationSummary", getService2())
+    }
+    
+    /**
+     * API 15: Get detailed application list
+     * GET /recApplication/getDetailedApplicationList
+     * Headers: EPC-UID
+     * Query Params: authorityType, recver, status, recbranch, applicationId
+     */
+    def getDetailedApplicationList() {
+        processRequestWithoutParams("getDetailedApplicationList", getService2())
+    }
+    
+    /**
+     * API 16: Get application counts and statistics
+     * GET /recApplication/getApplicationCounts
+     * Headers: EPC-UID
+     * Query Params: authorityType, recver
+     */
+    def getApplicationCounts() {
+        processRequestWithoutParams("getApplicationCounts", getService2())
+    }
+    
+    /**
+     * API 17: Get application data for specific application
+     * GET /recApplication/getApplicationData
+     * Headers: EPC-UID
+     * Query Params: applicationId
+     */
+    def getApplicationData() {
+        processRequestWithoutParams("getApplicationData", getService2())
+    }
+    
+    /**
+     * API 18: Get applicants list with filtering
+     * GET /recApplication/getApplicantsList
+     * Headers: EPC-UID
+     * Query Params: recver, category, searchText, page, pageSize
+     */
+    def getApplicantsList() {
+        processRequestWithoutParams("getApplicantsList", getService2())
     }
 }
