@@ -888,9 +888,22 @@ class RecApplicationService_1 {
                 return
             }
             
-            RecDocumentType recdocumenttype = RecDocumentType.findByIdAndIsactive(documentTypeId, true)
+            // Convert string to Long if needed
+            Long docTypeId = documentTypeId instanceof String ? documentTypeId.toLong() : documentTypeId
+            
+            println("Looking for RecDocumentType with ID: ${docTypeId}")
+            RecDocumentType recdocumenttype = RecDocumentType.findById(docTypeId)
+            
             if (!recdocumenttype) {
-                hm.msg = "Invalid document type"
+                println("RecDocumentType not found for ID: ${docTypeId}")
+                hm.msg = "Document type not found. Please check document type ID."
+                hm.flag = false
+                return
+            }
+            
+            if (!recdocumenttype.isactive) {
+                println("RecDocumentType is not active for ID: ${docTypeId}")
+                hm.msg = "Document type is not active"
                 hm.flag = false
                 return
             }
@@ -904,11 +917,12 @@ class RecApplicationService_1 {
             }
             
             String strFilename = file.originalFilename
-            String extension = strFilename.substring(strFilename.lastIndexOf('.') + 1)
+            String extension = strFilename.substring(strFilename.lastIndexOf('.') + 1).toLowerCase()
             
-            // Validate file extension
-            if (extension != recdocumenttype.extension) {
-                hm.msg = "Please select ${recdocumenttype.extension} file"
+            // Validate file extension (document type may have multiple extensions separated by comma)
+            def allowedExtensions = recdocumenttype.extension.toLowerCase().split(',').collect { it.trim() }
+            if (!allowedExtensions.contains(extension)) {
+                hm.msg = "Please select ${recdocumenttype.extension} file. Uploaded file has extension: ${extension}"
                 hm.flag = false
                 return
             }
@@ -989,7 +1003,7 @@ class RecApplicationService_1 {
      * Download document from AWS S3
      * Used by: GET /recApplication/downloadDocument
      */
-    def downloadDocument(hm, request, response) {
+    def downloadDocument(hm, request) {
         try {
             def uid = hm.remove("uid")
             def documentId = hm.remove("documentId")

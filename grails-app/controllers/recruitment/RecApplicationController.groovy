@@ -42,6 +42,43 @@ class RecApplicationController {
     }
     
     /**
+     * Common request processing for multipart form data (file uploads)
+     */
+    private void processMultipartRequest(String methodName, service) {
+        try {
+            def uid = request.getHeader("EPC-UID")
+            
+            if (!uid) {
+                render([flag: false, msg: "User not authenticated"] as JSON)
+                return
+            }
+            
+            HashMap hm = new HashMap()
+            hm.uid = uid
+            
+            // Add only non-file parameters to hashmap
+            params.each { key, value ->
+                if (key != 'controller' && key != 'action' && !(value instanceof org.springframework.web.multipart.MultipartFile)) {
+                    hm[key] = value
+                }
+            }
+            
+            // Call service method with params as data
+            service."${methodName}"(hm, request, params)
+            
+            // Remove any non-serializable objects before rendering
+            hm.remove('documentname')
+            
+            render hm as JSON
+            
+        } catch (Exception e) {
+            println("Error in processMultipartRequest: ${e.message}")
+            e.printStackTrace()
+            render([flag: false, msg: "Error processing request: ${e.message}"] as JSON)
+        }
+    }
+    
+    /**
      * Common request processing without body parameters (GET requests)
      */
     private void processRequestWithoutParams(String methodName, service) {
@@ -171,7 +208,7 @@ class RecApplicationController {
      *   documentname: File (the file to upload)
      */
     def uploadDocument() {
-        processRequestWithParams("uploadDocument", getService1())
+        processMultipartRequest("uploadDocument", getService1())
     }
     
     /**
