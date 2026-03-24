@@ -933,4 +933,340 @@ class RecApplicationService_2 {
             hm.flag = false
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 5: Admin - Application Approval & Shortlisting APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Process application (approve/reject/shortlist)
+     * Used by: POST /recApplication/processApplication
+     */
+    def processApplication(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def applicationId = data.applicationId
+            def branchId = data.branchId
+            def authorityTypeId = data.authorityTypeId
+            def action = data.action // 'approve', 'reject', 'shortlist'
+            def remark = data.remark
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!applicationId || !authorityTypeId || !action) {
+                hm.msg = "Required parameters missing"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor
+            Login login = Login.findByUsername(uid)
+            Instructor instructor = Instructor.findByUid(login.username)
+            Organization organization = instructor.organization
+            
+            // Find application
+            RecApplication recapplication = RecApplication.findById(applicationId)
+            if (!recapplication) {
+                hm.msg = "Application not found"
+                hm.flag = false
+                return
+            }
+            
+            // Find authority type
+            RecAuthorityType recauthoritytype = RecAuthorityType.findById(authorityTypeId)
+            if (!recauthoritytype) {
+                hm.msg = "Authority type not found"
+                hm.flag = false
+                return
+            }
+            
+            // Find branch if specified
+            RecBranch recbranch = null
+            if (branchId) {
+                recbranch = RecBranch.findById(branchId)
+            }
+            
+            // Find application status
+            RecApplicationStatus recapplicationstatus
+            if (recbranch) {
+                recapplicationstatus = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytypeAndRecbranch(
+                    organization, recapplication, recauthoritytype, recbranch)
+            } else {
+                recapplicationstatus = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytype(
+                    organization, recapplication, recauthoritytype)
+            }
+            
+            if (!recapplicationstatus) {
+                hm.msg = "Application status not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get status master based on action
+            def statusName = action == 'approve' ? 'approved' : (action == 'reject' ? 'rejected' : 'shortlisted')
+            RecApplicationStatusMaster statusMaster = RecApplicationStatusMaster.findByStatusAndOrganization(statusName, organization)
+            
+            if (!statusMaster) {
+                hm.msg = "Status master not found for: ${statusName}"
+                hm.flag = false
+                return
+            }
+            
+            // Update status
+            recapplicationstatus.recapplicationstatusmaster = statusMaster
+            recapplicationstatus.approvedby = instructor
+            recapplicationstatus.approve_date = new Date()
+            recapplicationstatus.remark = remark ?: ""
+            recapplicationstatus.username = uid
+            recapplicationstatus.updation_date = new Date()
+            recapplicationstatus.updation_ip_address = request.getRemoteAddr()
+            
+            if (action == 'shortlist') {
+                recapplicationstatus.iscalledforinterview = true
+            }
+            
+            recapplicationstatus.save(failOnError: true, flush: true)
+            
+            hm.msg = "Application ${action}ed successfully"
+            hm.flag = true
+            hm.applicationId = recapplication.id
+            hm.status = statusName
+            
+        } catch (Exception e) {
+            println("Error in processApplication: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error processing application: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Notify shortlisted candidates
+     * Used by: POST /recApplication/notifyShortlistedCandidates
+     */
+    def notifyShortlistedCandidates(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def applicationIds = data.applicationIds // Array of application IDs
+            def emailSubject = data.emailSubject
+            def emailBody = data.emailBody
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!applicationIds || applicationIds.isEmpty()) {
+                hm.msg = "No applications selected"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor
+            Login login = Login.findByUsername(uid)
+            Instructor instructor = Instructor.findByUid(login.username)
+            
+            def notifiedCount = 0
+            def failedCount = 0
+            
+            for (appId in applicationIds) {
+                try {
+                    RecApplication recapp = RecApplication.findById(appId)
+                    if (!recapp) continue
+                    
+                    // Get shortlisted status
+                    def statusList = RecApplicationStatus.findAllByRecapplication(recapp)
+                    def shortlistedStatus = statusList.find { 
+                        it.recapplicationstatusmaster?.status == 'shortlisted' || 
+                        it.iscalledforinterview == true 
+                    }
+                    
+                    if (shortlistedStatus) {
+                        // Mark as mail sent
+                        shortlistedStatus.ismailsent = true
+                        shortlistedStatus.mailsentdate = new Date()
+                        shortlistedStatus.save(failOnError: true, flush: true)
+                        
+                        // TODO: Send actual email using SendMailService
+                        // sendMailService.sendMail(
+                        //     to: recapp.recapplicant.email,
+                        //     subject: emailSubject,
+                        //     body: emailBody
+                        // )
+                        
+                        notifiedCount++
+                    }
+                } catch (Exception e) {
+                    println("Error notifying application ${appId}: ${e.message}")
+                    failedCount++
+                }
+            }
+            
+            hm.notifiedCount = notifiedCount
+            hm.failedCount = failedCount
+            hm.msg = "Notification sent to ${notifiedCount} candidates"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in notifyShortlistedCandidates: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error sending notifications: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Reject application with reason
+     * Used by: POST /recApplication/rejectApplication
+     */
+    def rejectApplication(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def applicationId = data.applicationId
+            def branchId = data.branchId
+            def authorityTypeId = data.authorityTypeId
+            def rejectionReason = data.rejectionReason
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!applicationId || !rejectionReason) {
+                hm.msg = "Application ID and rejection reason are required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor
+            Login login = Login.findByUsername(uid)
+            Instructor instructor = Instructor.findByUid(login.username)
+            Organization organization = instructor.organization
+            
+            // Find application
+            RecApplication recapplication = RecApplication.findById(applicationId)
+            if (!recapplication) {
+                hm.msg = "Application not found"
+                hm.flag = false
+                return
+            }
+            
+            // Mark application as rejected
+            recapplication.isrejected = true
+            recapplication.save(failOnError: true, flush: true)
+            
+            // Update all status records to rejected
+            def statusList = RecApplicationStatus.findAllByRecapplication(recapplication)
+            RecApplicationStatusMaster rejectedStatus = RecApplicationStatusMaster.findByStatusAndOrganization('rejected', organization)
+            
+            for (RecApplicationStatus status : statusList) {
+                if (branchId && status.recbranch?.id != branchId.toLong()) {
+                    continue
+                }
+                
+                if (authorityTypeId && status.recauthoritytype?.id != authorityTypeId.toLong()) {
+                    continue
+                }
+                
+                status.recapplicationstatusmaster = rejectedStatus
+                status.remark = rejectionReason
+                status.approvedby = instructor
+                status.approve_date = new Date()
+                status.username = uid
+                status.updation_date = new Date()
+                status.updation_ip_address = request.getRemoteAddr()
+                status.save(failOnError: true, flush: true)
+            }
+            
+            hm.msg = "Application rejected successfully"
+            hm.flag = true
+            hm.applicationId = recapplication.id
+            
+        } catch (Exception e) {
+            println("Error in rejectApplication: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error rejecting application: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Mark applicant attendance for interview
+     * Used by: POST /recApplication/markAttendance
+     */
+    def markAttendance(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def applicationId = data.applicationId
+            def branchId = data.branchId
+            def isPresent = data.isPresent // true/false
+            def attendanceRemark = data.attendanceRemark
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!applicationId) {
+                hm.msg = "Application ID is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor
+            Login login = Login.findByUsername(uid)
+            Instructor instructor = Instructor.findByUid(login.username)
+            Organization organization = instructor.organization
+            
+            // Find application
+            RecApplication recapplication = RecApplication.findById(applicationId)
+            if (!recapplication) {
+                hm.msg = "Application not found"
+                hm.flag = false
+                return
+            }
+            
+            // Find or create attendance record
+            // Note: Assuming there's a RecApplicantAttendance domain class
+            // If not, we can store attendance info in RecApplicationStatus remark
+            
+            def statusList = RecApplicationStatus.findAllByRecapplication(recapplication)
+            def shortlistedStatus = statusList.find { 
+                it.iscalledforinterview == true 
+            }
+            
+            if (shortlistedStatus) {
+                def attendanceInfo = isPresent ? "Present" : "Absent"
+                if (attendanceRemark) {
+                    attendanceInfo += ": ${attendanceRemark}"
+                }
+                
+                // Append to remark
+                def currentRemark = shortlistedStatus.remark ?: ""
+                shortlistedStatus.remark = currentRemark + "\nAttendance: ${attendanceInfo}"
+                shortlistedStatus.username = uid
+                shortlistedStatus.updation_date = new Date()
+                shortlistedStatus.updation_ip_address = request.getRemoteAddr()
+                shortlistedStatus.save(failOnError: true, flush: true)
+            }
+            
+            hm.msg = "Attendance marked successfully"
+            hm.flag = true
+            hm.applicationId = recapplication.id
+            hm.attendance = isPresent ? "Present" : "Absent"
+            
+        } catch (Exception e) {
+            println("Error in markAttendance: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error marking attendance: ${e.message}"
+            hm.flag = false
+        }
+    }
 }

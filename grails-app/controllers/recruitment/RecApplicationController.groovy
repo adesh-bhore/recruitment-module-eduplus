@@ -335,4 +335,68 @@ class RecApplicationController {
     def getApplicantsList() {
         processRequestWithoutParams("getApplicantsList", getService2())
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 5: Admin - Application Approval & Shortlisting APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 19: Process application (approve/reject/shortlist)
+     * POST /recApplication/processApplication
+     * Headers: EPC-UID
+     * Request Body: {
+     *   applicationId: Long,
+     *   branchId: Long (optional),
+     *   authorityTypeId: Long,
+     *   action: String ('approve', 'reject', 'shortlist'),
+     *   remark: String (optional)
+     * }
+     */
+    def processApplication() {
+        processRequestWithParams("processApplication", getService2())
+    }
+    
+    /**
+     * API 20: Notify shortlisted candidates
+     * POST /recApplication/notifyShortlistedCandidates
+     * Headers: EPC-UID
+     * Request Body: {
+     *   applicationIds: [Long],
+     *   emailSubject: String,
+     *   emailBody: String
+     * }
+     */
+    def notifyShortlistedCandidates() {
+        processRequestWithParams("notifyShortlistedCandidates", getService2())
+    }
+    
+    /**
+     * API 21: Reject application with reason
+     * POST /recApplication/rejectApplication
+     * Headers: EPC-UID
+     * Request Body: {
+     *   applicationId: Long,
+     *   branchId: Long (optional),
+     *   authorityTypeId: Long (optional),
+     *   rejectionReason: String
+     * }
+     */
+    def rejectApplication() {
+        processRequestWithParams("rejectApplication", getService2())
+    }
+    
+    /**
+     * API 22: Mark applicant attendance for interview
+     * POST /recApplication/markAttendance
+     * Headers: EPC-UID
+     * Request Body: {
+     *   applicationId: Long,
+     *   branchId: Long (optional),
+     *   isPresent: Boolean,
+     *   attendanceRemark: String (optional)
+     * }
+     */
+    def markAttendance() {
+        processRequestWithParams("markAttendance", getService2())
+    }
 }
