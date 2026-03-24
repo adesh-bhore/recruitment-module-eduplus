@@ -147,4 +147,60 @@ class RecApplicationController {
     def getApplicationDetails() {
         processRequestWithoutParams("getApplicationDetails", getService1())
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 2: Document Management APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 6: Get document types required for application
+     * GET /recApplication/getDocumentTypes
+     * Headers: EPC-UID
+     */
+    def getDocumentTypes() {
+        processRequestWithoutParams("getDocumentTypes", getService1())
+    }
+    
+    /**
+     * API 7: Upload document to AWS S3
+     * POST /recApplication/uploadDocument
+     * Headers: EPC-UID
+     * Content-Type: multipart/form-data
+     * Form Data:
+     *   documenttype: Long (document type ID)
+     *   documentname: File (the file to upload)
+     */
+    def uploadDocument() {
+        processRequestWithParams("uploadDocument", getService1())
+    }
+    
+    /**
+     * API 8: Download document from AWS S3
+     * GET /recApplication/downloadDocument
+     * Headers: EPC-UID
+     * Query Params: documentId (document ID)
+     */
+    def downloadDocument() {
+        processRequestWithoutParams("downloadDocument", getService1())
+    }
+    
+    /**
+     * API 9: Delete document from AWS S3
+     * POST /recApplication/deleteDocument
+     * Headers: EPC-UID
+     * Request Body: { documentId: Long }
+     */
+    def deleteDocument() {
+        processRequestWithParams("deleteDocument", getService1())
+    }
+    
+    /**
+     * API 10: Get applicant photo
+     * GET /recApplication/getApplicantPhoto
+     * Headers: EPC-UID
+     * Query Params: applicantId (optional, defaults to logged-in user)
+     */
+    def getApplicantPhoto() {
+        processRequestWithoutParams("getApplicantPhoto", getService1())
+    }
 }

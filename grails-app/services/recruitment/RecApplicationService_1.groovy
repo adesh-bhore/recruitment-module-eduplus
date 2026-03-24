@@ -2,6 +2,8 @@ package recruitment
 
 import grails.gorm.transactions.Transactional
 import java.text.SimpleDateFormat
+import javax.servlet.http.Part
+import common.AWSUploadDocumentsService
 
 @Transactional
 class RecApplicationService_1 {
@@ -799,6 +801,365 @@ class RecApplicationService_1 {
         } catch (Exception e) {
             println("Error in getApplicationDetails: ${e.message}")
             hm.msg = "Error fetching application details: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 2: Document Management APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * Get document types required for application
+     * Used by: GET /recApplication/getDocumentTypes
+     */
+    def getDocumentTypes(hm, request) {
+        try {
+            def uid = hm.remove("uid")
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicant recapplicant = RecApplicant.findByEmail(uid)
+            if (!recapplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get all active document types
+            def documentTypes = RecDocumentType.findAllByIsactive(true)
+            
+            // Get uploaded documents for this applicant
+            def uploadedDocuments = RecApplicantDocument.findAllByRecapplicant(recapplicant)
+            
+            hm.documentTypes = documentTypes.collect { dt ->
+                def uploaded = uploadedDocuments.find { it.recdocumenttype.id == dt.id }
+                [
+                    id: dt.id,
+                    type: dt.type,
+                    extension: dt.extension,
+                    iscompulsory: dt.iscompulsory,
+                    uploaded: uploaded != null,
+                    uploadedDocId: uploaded?.id,
+                    uploadedFileName: uploaded?.filename,
+                    uploadedDate: uploaded?.creation_date
+                ]
+            }
+            
+            hm.msg = "Document types fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getDocumentTypes: ${e.message}")
+            hm.msg = "Error fetching document types: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Upload document to AWS S3
+     * Used by: POST /recApplication/uploadDocument
+     */
+    def uploadDocument(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def documentTypeId = data.documenttype
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicant recapplicant = RecApplicant.findByEmail(uid)
+            if (!recapplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+            
+            if (!documentTypeId) {
+                hm.msg = "Please select document type"
+                hm.flag = false
+                return
+            }
+            
+            RecDocumentType recdocumenttype = RecDocumentType.findByIdAndIsactive(documentTypeId, true)
+            if (!recdocumenttype) {
+                hm.msg = "Invalid document type"
+                hm.flag = false
+                return
+            }
+            
+            // Get file from multipart request
+            def file = request.getFile("documentname")
+            if (!file || file.empty) {
+                hm.msg = "Please select a file to upload"
+                hm.flag = false
+                return
+            }
+            
+            String strFilename = file.originalFilename
+            String extension = strFilename.substring(strFilename.lastIndexOf('.') + 1)
+            
+            // Validate file extension
+            if (extension != recdocumenttype.extension) {
+                hm.msg = "Please select ${recdocumenttype.extension} file"
+                hm.flag = false
+                return
+            }
+            
+            // AWS S3 configuration
+            AWSBucket awsBucket = AWSBucket.findByContent("documents")
+            AWSFolderPath afp = AWSFolderPath.findById(5)
+            
+            if (!awsBucket || !afp) {
+                hm.msg = "AWS configuration not found"
+                hm.flag = false
+                return
+            }
+            
+            // Prepare file path
+            String path = "recruitment/documents/" + recapplicant.id + "/"
+            String awsfp = afp.path + path
+            String existsFilePath = ""
+            
+            // Check if document already exists
+            RecApplicantDocument recapplicantdocument = RecApplicantDocument.findByRecapplicantAndRecdocumenttype(recapplicant, recdocumenttype)
+            
+            if (recapplicantdocument == null) {
+                // Create new document record
+                recapplicantdocument = new RecApplicantDocument()
+                recapplicantdocument.filepath = path
+                recapplicantdocument.filename = file.originalFilename
+                recapplicantdocument.username = uid
+                recapplicantdocument.creation_date = new Date()
+                recapplicantdocument.updation_date = new Date()
+                recapplicantdocument.creation_ip_address = request.getRemoteAddr()
+                recapplicantdocument.updation_ip_address = request.getRemoteAddr()
+                recapplicantdocument.recapplicant = recapplicant
+                recapplicantdocument.recdocumenttype = recdocumenttype
+                recapplicantdocument.save(failOnError: true, flush: true)
+            } else {
+                // Update existing document record
+                existsFilePath = awsfp + recapplicantdocument.filepath + recapplicantdocument.filename
+                recapplicantdocument.filename = file.originalFilename
+                recapplicantdocument.username = uid
+                recapplicantdocument.updation_date = new Date()
+                recapplicantdocument.updation_ip_address = request.getRemoteAddr()
+                recapplicantdocument.save(failOnError: true, flush: true)
+            }
+            
+            // Upload to AWS S3
+            Part filePart = request.getPart("documentname")
+            AWSUploadDocumentsService awsUploadDocumentsService = new AWSUploadDocumentsService()
+            boolean isUploaded = awsUploadDocumentsService.uploadDocument(filePart, awsfp, file.originalFilename, existsFilePath)
+            
+            if (!isUploaded) {
+                hm.msg = "Failed to upload document to AWS S3"
+                hm.flag = false
+                return
+            }
+            
+            // If photo, update applicant record
+            if (recdocumenttype.type == 'Photo') {
+                recapplicant.photopath = path
+                recapplicant.photoname = file.originalFilename
+                recapplicant.save(failOnError: true, flush: true)
+            }
+            
+            hm.documentId = recapplicantdocument.id
+            hm.filename = file.originalFilename
+            hm.msg = "Document uploaded successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in uploadDocument: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error uploading document: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Download document from AWS S3
+     * Used by: GET /recApplication/downloadDocument
+     */
+    def downloadDocument(hm, request, response) {
+        try {
+            def uid = hm.remove("uid")
+            def documentId = hm.remove("documentId")
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            if (!documentId) {
+                hm.msg = "Document ID not provided"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicant recapplicant = RecApplicant.findByEmail(uid)
+            if (!recapplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicantDocument recdocument = RecApplicantDocument.findById(documentId)
+            if (!recdocument) {
+                hm.msg = "Document not found"
+                hm.flag = false
+                return
+            }
+            
+            // Verify ownership
+            if (recdocument.recapplicant.id != recapplicant.id) {
+                hm.msg = "Unauthorized access"
+                hm.flag = false
+                return
+            }
+            
+            // Return file info for download
+            hm.filepath = recdocument.filepath
+            hm.filename = recdocument.filename
+            hm.documentType = recdocument.recdocumenttype.type
+            hm.extension = recdocument.recdocumenttype.extension
+            hm.msg = "Document info fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in downloadDocument: ${e.message}")
+            hm.msg = "Error downloading document: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Delete document from AWS S3
+     * Used by: POST /recApplication/deleteDocument
+     */
+    def deleteDocument(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def documentId = data.documentId
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            if (!documentId) {
+                hm.msg = "Document ID not provided"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicant recapplicant = RecApplicant.findByEmail(uid)
+            if (!recapplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicantDocument recdocument = RecApplicantDocument.findById(documentId)
+            if (!recdocument) {
+                hm.msg = "Document not found"
+                hm.flag = false
+                return
+            }
+            
+            // Verify ownership
+            if (recdocument.recapplicant.id != recapplicant.id) {
+                hm.msg = "Unauthorized access"
+                hm.flag = false
+                return
+            }
+            
+            // AWS S3 configuration
+            AWSFolderPath afp = AWSFolderPath.findById(5)
+            if (!afp) {
+                hm.msg = "AWS configuration not found"
+                hm.flag = false
+                return
+            }
+            
+            String awsfp = afp.path + recdocument.filepath + recdocument.filename
+            
+            // Delete from AWS S3
+            AWSUploadDocumentsService awsUploadDocumentsService = new AWSUploadDocumentsService()
+            boolean isDeleted = awsUploadDocumentsService.deleteDocument(awsfp)
+            
+            if (!isDeleted) {
+                println("Warning: Failed to delete document from AWS S3, but will delete database record")
+            }
+            
+            // Delete database record
+            recdocument.delete(failOnError: true, flush: true)
+            
+            hm.msg = "Document deleted successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in deleteDocument: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error deleting document: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Get applicant photo
+     * Used by: GET /recApplication/getApplicantPhoto
+     */
+    def getApplicantPhoto(hm, request) {
+        try {
+            def uid = hm.remove("uid")
+            def applicantId = hm.remove("applicantId")
+            
+            if (!uid) {
+                hm.msg = "User not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicant recapplicant
+            if (applicantId) {
+                recapplicant = RecApplicant.findById(applicantId)
+            } else {
+                recapplicant = RecApplicant.findByEmail(uid)
+            }
+            
+            if (!recapplicant) {
+                hm.msg = "Applicant not found"
+                hm.flag = false
+                return
+            }
+            
+            if (!recapplicant.photopath || !recapplicant.photoname) {
+                hm.msg = "Photo not uploaded"
+                hm.flag = false
+                return
+            }
+            
+            // Return photo info
+            hm.photopath = recapplicant.photopath
+            hm.photoname = recapplicant.photoname
+            hm.fullpath = recapplicant.photopath + recapplicant.photoname
+            hm.msg = "Photo info fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getApplicantPhoto: ${e.message}")
+            hm.msg = "Error fetching photo: ${e.message}"
             hm.flag = false
         }
     }
