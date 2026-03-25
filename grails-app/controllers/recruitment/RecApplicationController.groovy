@@ -480,5 +480,90 @@ class RecApplicationController {
     private RecApplicationService_3 getService3() {
         return new RecApplicationService_3()
     }
+
+    private RecApplicationService_4 getService4() {
+        return new RecApplicationService_4()
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 7: Bulk Operations & Reports APIs
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * API 28: Bulk Download Documents
+     * POST /recApplication/bulkDownloadDocuments
+     * 
+     * Request Body: {
+     *   applicantId: Long,
+     *   versionId: Long,
+     *   bulkType: String ("All" or "Selected"),
+     *   documentIds: Array<Long> (required if bulkType="Selected")
+     * }
+     * 
+     * Response: ZIP file download
+     */
+    def bulkDownloadDocuments() {
+        def hm = processRequestWithParams(request)
+        if (hm.flag) {
+            def service = getService4()
+            service.bulkDownloadDocuments(hm, request, response, hm.data)
+        } else {
+            render hm as JSON
+        }
+    }
+
+    /**
+     * API 29: Bulk Approve Applications
+     * POST /recApplication/bulkApproveApplications
+     * 
+     * Request Body: {
+     *   applicationIds: Array<Long>,
+     *   authorityTypeId: Long,
+     *   branchId: Long (optional),
+     *   remark: String (optional)
+     * }
+     */
+    def bulkApproveApplications() {
+        processRequestWithParams("bulkApproveApplications", getService4())
+    }
+
+    /**
+     * API 30: Bulk Reject Applications
+     * POST /recApplication/bulkRejectApplications
+     * 
+     * Request Body: {
+     *   applicationIds: Array<Long>,
+     *   rejectionReason: String,
+     *   authorityTypeId: Long (optional),
+     *   branchId: Long (optional)
+     * }
+     */
+    def bulkRejectApplications() {
+        processRequestWithParams("bulkRejectApplications", getService4())
+    }
+
+    /**
+     * API 31: Export Applications
+     * GET /recApplication/exportApplications
+     * 
+     * Query Parameters: {
+     *   versionId: Long (optional),
+     *   authorityType: String (optional),
+     *   status: String (optional),
+     *   branchId: Long (optional),
+     *   format: String (optional, default: "csv")
+     * }
+     * 
+     * Response: CSV file download
+     */
+    def exportApplications() {
+        def hm = processRequestWithoutParams(request)
+        if (hm.flag) {
+            def service = getService4()
+            service.exportApplications(hm, request, response, hm.data)
+        } else {
+            render hm as JSON
+        }
+    }
 }
 
