@@ -14,7 +14,7 @@ class RecApplicationService_2 {
      * Get authority applications - detect user's authority roles
      * Used by: GET /recApplication/getAuthorityApplications
      */
-    def getAuthorityApplications(hm, request) {
+    def getAuthorityApplications(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             
@@ -121,7 +121,7 @@ class RecApplicationService_2 {
      * Get application summary with filters
      * Used by: GET /recApplication/getApplicationSummary
      */
-    def getApplicationSummary(hm, request) {
+    def getApplicationSummary(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def authorityType = hm.remove("authorityType")
@@ -317,7 +317,7 @@ class RecApplicationService_2 {
      * Get detailed application list with complete information
      * Used by: GET /recApplication/getDetailedApplicationList
      */
-    def getDetailedApplicationList(hm, request) {
+    def getDetailedApplicationList(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def authorityType = hm.remove("authorityType")
@@ -527,7 +527,7 @@ class RecApplicationService_2 {
      * Get application counts and statistics
      * Used by: GET /recApplication/getApplicationCounts
      */
-    def getApplicationCounts(hm, request) {
+    def getApplicationCounts(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def authorityType = hm.remove("authorityType")
@@ -661,7 +661,7 @@ class RecApplicationService_2 {
      * Get application data for specific application
      * Used by: GET /recApplication/getApplicationData
      */
-    def getApplicationData(hm, request) {
+    def getApplicationData(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def applicationId = hm.remove("applicationId")
@@ -842,7 +842,7 @@ class RecApplicationService_2 {
      * Get applicants list with filtering
      * Used by: GET /recApplication/getApplicantsList
      */
-    def getApplicantsList(hm, request) {
+    def getApplicantsList(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def recverId = hm.remove("recver")

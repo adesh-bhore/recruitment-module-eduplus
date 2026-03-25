@@ -15,7 +15,7 @@ class RecApplicationService_1 {
      * Get active recruitment versions (within date range)
      * Used by: GET /recApplication/getActiveRecruitments
      */
-    def getActiveRecruitments(hm, request) {
+    def getActiveRecruitments(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             
@@ -84,7 +84,7 @@ class RecApplicationService_1 {
      * Get all form data needed for application submission
      * Used by: GET /recApplication/getApplicationFormData
      */
-    def getApplicationFormData(hm, request) {
+    def getApplicationFormData(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def recverId = hm.remove("recver")
@@ -575,7 +575,7 @@ class RecApplicationService_1 {
      * Get all applications for logged-in applicant
      * Used by: GET /recApplication/getMyApplications
      */
-    def getMyApplications(hm, request) {
+    def getMyApplications(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             
@@ -635,7 +635,7 @@ class RecApplicationService_1 {
      * Get detailed application information
      * Used by: GET /recApplication/getApplicationDetails/:id
      */
-    def getApplicationDetails(hm, request) {
+    def getApplicationDetails(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def applicationId = hm.remove("applicationId")
@@ -816,7 +816,7 @@ class RecApplicationService_1 {
      * Get document types required for application
      * Used by: GET /recApplication/getDocumentTypes
      */
-    def getDocumentTypes(hm, request) {
+    def getDocumentTypes(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             
@@ -1006,7 +1006,7 @@ class RecApplicationService_1 {
      * Download document from AWS S3
      * Used by: GET /recApplication/downloadDocument
      */
-    def downloadDocument(hm, request) {
+    def downloadDocument(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def documentId = hm.remove("documentId")
@@ -1137,7 +1137,7 @@ class RecApplicationService_1 {
      * Get applicant photo
      * Used by: GET /recApplication/getApplicantPhoto
      */
-    def getApplicantPhoto(hm, request) {
+    def getApplicantPhoto(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def applicantId = hm.remove("applicantId")
@@ -1189,7 +1189,7 @@ class RecApplicationService_1 {
      * Get application preview data (for PDF generation or display)
      * Used by: GET /recApplication/getApplicationPreview
      */
-    def getApplicationPreview(hm, request) {
+    def getApplicationPreview(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def applicationId = hm.remove("applicationId")
@@ -1417,7 +1417,7 @@ class RecApplicationService_1 {
      * Download document file (get presigned URL for download)
      * Used by: GET /recApplication/downloadDocumentFile
      */
-    def downloadDocumentFile(hm, request) {
+    def downloadDocumentFile(hm, request, data) {
         try {
             def uid = hm.remove("uid")
             def documentId = hm.remove("documentId")
