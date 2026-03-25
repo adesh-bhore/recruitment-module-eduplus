@@ -1,6 +1,7 @@
 package recruitment
 
 import grails.converters.JSON
+import grails.gorm.transactions.Transactional
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
 import java.text.SimpleDateFormat
@@ -16,6 +17,7 @@ import common.AWSBucketService
  * - Bulk reject applications
  * - Export applications to Excel/CSV
  */
+@Transactional
 class RecApplicationService_4 {
 
     // ═══════════════════════════════════════════════════════════════

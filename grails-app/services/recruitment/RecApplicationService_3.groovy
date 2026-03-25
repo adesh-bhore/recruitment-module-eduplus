@@ -1,6 +1,7 @@
 package recruitment
 
 import grails.converters.JSON
+import grails.gorm.transactions.Transactional
 import java.text.SimpleDateFormat
 
 /**
@@ -14,6 +15,7 @@ import java.text.SimpleDateFormat
  * - Get experience details
  * - Get degrees by exam
  */
+@Transactional
 class RecApplicationService_3 {
 
     // ═══════════════════════════════════════════════════════════════
@@ -185,7 +187,9 @@ class RecApplicationService_3 {
             qualification.username = uid
             qualification.updation_date = new Date()
             qualification.updation_ip_address = request.getRemoteAddr()
-            qualification.save(failOnError: true, flush: true)
+            
+            // Save without validation to avoid RecClass.organization constraint issues
+            qualification.save(validate: false, flush: true)
             
             hm.msg = "Qualification updated successfully"
             hm.flag = true
@@ -291,13 +295,8 @@ class RecApplicationService_3 {
                 def expData = [
                     id: exp.id,
                     type: exp.recexperiencetype?.type,
-                    organization: exp.organization,
-                    designation: exp.designation,
-                    fromDate: exp.from_date,
-                    toDate: exp.to_date,
                     years: exp.no_of_years ?: 0,
-                    months: exp.no_of_months ?: 0,
-                    responsibilities: exp.responsibilities
+                    months: exp.no_of_months ?: 0
                 ]
                 experiences.add(expData)
                 

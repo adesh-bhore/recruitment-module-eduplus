@@ -97,15 +97,17 @@ class RecApplicationController {
             HashMap hm = new HashMap()
             hm.uid = uid
             
-            // Add query parameters to hashmap
+            // Create data map from query parameters
+            def data = [:]
             params.each { key, value ->
                 if (key != 'controller' && key != 'action') {
                     hm[key] = value
+                    data[key] = value
                 }
             }
             
-            // Call service method
-            service."${methodName}"(hm, request)
+            // Call service method with data parameter
+            service."${methodName}"(hm, request, data)
             
             render hm as JSON
             
