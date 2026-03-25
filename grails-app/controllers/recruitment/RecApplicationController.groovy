@@ -399,4 +399,86 @@ class RecApplicationController {
     def markAttendance() {
         processRequestWithParams("markAttendance", getService2())
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 6: Qualification & Experience Management APIs
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * API 23: Get Qualification Details
+     * GET /recApplication/getQualificationDetails
+     * 
+     * Query Parameters: {
+     *   applicantId: Long
+     * }
+     */
+    def getQualificationDetails() {
+        processRequestWithoutParams("getQualificationDetails", getService3())
+    }
+
+    /**
+     * API 24: Update Qualification
+     * POST /recApplication/updateQualification
+     * 
+     * Request Body: {
+     *   qualificationId: Long,
+     *   degreeId: Long (optional),
+     *   degreeNameId: Long (optional),
+     *   classId: Long (optional),
+     *   degreeStatusId: Long (optional),
+     *   yearOfPassing: String (optional),
+     *   university: String (optional),
+     *   branch: String (optional),
+     *   cpiMarks: Double (optional)
+     * }
+     */
+    def updateQualification() {
+        processRequestWithParams("updateQualification", getService3())
+    }
+
+    /**
+     * API 25: Delete Qualification
+     * POST /recApplication/deleteQualification
+     * 
+     * Request Body: {
+     *   qualificationId: Long
+     * }
+     */
+    def deleteQualification() {
+        processRequestWithParams("deleteQualification", getService3())
+    }
+
+    /**
+     * API 26: Get Experience Details
+     * GET /recApplication/getExperienceDetails
+     * 
+     * Query Parameters: {
+     *   applicantId: Long
+     * }
+     */
+    def getExperienceDetails() {
+        processRequestWithoutParams("getExperienceDetails", getService3())
+    }
+
+    /**
+     * API 27: Get Degrees by Exam
+     * GET /recApplication/getDegreesByExam
+     * 
+     * Query Parameters: {
+     *   examId: Long,
+     *   organizationId: Long
+     * }
+     */
+    def getDegreesByExam() {
+        processRequestWithoutParams("getDegreesByExam", getService3())
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Helper Methods
+    // ═══════════════════════════════════════════════════════════════
+
+    private RecApplicationService_3 getService3() {
+        return new RecApplicationService_3()
+    }
 }
+
