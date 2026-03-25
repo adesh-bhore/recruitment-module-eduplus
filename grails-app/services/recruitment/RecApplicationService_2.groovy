@@ -529,9 +529,12 @@ class RecApplicationService_2 {
      */
     def getApplicationCounts(hm, request, data) {
         try {
+            println("=== getApplicationCounts START ===")
             def uid = hm.remove("uid")
-            def authorityType = hm.remove("authorityType")
-            def recverId = hm.remove("recver")
+            def authorityType = data?.authorityType
+            def recverId = data?.recver
+            
+            println("uid: ${uid}, authorityType: ${authorityType}, recverId: ${recverId}")
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -547,13 +550,32 @@ class RecApplicationService_2 {
             
             // Find instructor
             Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
             Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
             Organization organization = instructor.organization
+            if (!organization) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            println("Found instructor: ${instructor.id}, org: ${organization.id}")
             
             // Get recruitment version
-            RecVersion recversion
+            RecVersion recversion = null
             if (recverId) {
-                recversion = RecVersion.findById(recverId)
+                recversion = RecVersion.findById(recverId as Long)
             } else {
                 recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(organization, true)
             }
@@ -564,24 +586,49 @@ class RecApplicationService_2 {
                 return
             }
             
-            // Get all applications
-            def recapplicationlist = RecApplication.findAllByRecversionAndOrganizationAndIsfeespaid(
-                recversion, organization, true)
+            println("Found recversion: ${recversion.id}")
+            
+            // Get all applications - use executeQuery to avoid lazy loading issues
+            def recapplicationlist = RecApplication.executeQuery(
+                "FROM RecApplication WHERE recversion = :rv AND organization = :org AND isfeespaid = true",
+                [rv: recversion, org: organization]
+            )
+            
+            println("Found ${recapplicationlist?.size() ?: 0} applications")
+            
+            if (!recapplicationlist) {
+                // Return empty counts
+                hm.totalApplications = 0
+                hm.byStatus = [inprocess: 0, approved: 0, rejected: 0]
+                hm.byBranch = []
+                hm.byPost = []
+                hm.byCategory = []
+                hm.feesPaid = 0
+                hm.feesNotPaid = 0
+                hm.msg = "No applications found"
+                hm.flag = true
+                return
+            }
             
             // Filter by authority
             def filteredApps = []
-            for (RecApplication reca : recapplicationlist) {
+            recapplicationlist.each { RecApplication reca ->
                 if (authorityType == "HOD") {
-                    for (RecBranch rb : reca.recbranch) {
-                        if (rb.program?.department?.hod?.id == instructor.id) {
-                            filteredApps.add(reca)
-                            break
+                    def branches = reca.recbranch
+                    if (branches) {
+                        branches.each { RecBranch rb ->
+                            if (rb?.program?.department?.hod?.id == instructor.id) {
+                                filteredApps.add(reca)
+                                return // break from inner each
+                            }
                         }
                     }
                 } else {
                     filteredApps.add(reca)
                 }
             }
+            
+            println("Filtered to ${filteredApps.size()} applications")
             
             // Count by status
             def byStatus = [inprocess: 0, approved: 0, rejected: 0]
@@ -591,51 +638,65 @@ class RecApplicationService_2 {
             def feesPaid = 0
             def feesNotPaid = 0
             
-            for (RecApplication reca : filteredApps) {
-                // Status count
-                def appStatus = RecApplicationStatus.findByRecapplication(reca)
-                def statusName = appStatus?.recapplicationstatusmaster?.status ?: 'inprocess'
-                byStatus[statusName] = (byStatus[statusName] ?: 0) + 1
-                
-                // Branch count
-                for (RecBranch rb : reca.recbranch) {
-                    def branchKey = rb.id
-                    if (!byBranch[branchKey]) {
-                        byBranch[branchKey] = [
-                            branchId: rb.id,
-                            branchName: rb.name,
-                            count: 0,
-                            approved: 0,
-                            rejected: 0,
-                            inprocess: 0
-                        ]
+            filteredApps.each { RecApplication reca ->
+                try {
+                    // Status count
+                    def appStatus = RecApplicationStatus.findByRecapplication(reca)
+                    def statusName = appStatus?.recapplicationstatusmaster?.status ?: 'inprocess'
+                    byStatus[statusName] = (byStatus[statusName] ?: 0) + 1
+                    
+                    // Branch count
+                    def branches = reca.recbranch
+                    if (branches) {
+                        branches.each { RecBranch rb ->
+                            if (rb) {
+                                def branchKey = rb.id.toString()
+                                if (!byBranch[branchKey]) {
+                                    byBranch[branchKey] = [
+                                        branchId: rb.id,
+                                        branchName: rb.name,
+                                        count: 0,
+                                        approved: 0,
+                                        rejected: 0,
+                                        inprocess: 0
+                                    ]
+                                }
+                                byBranch[branchKey].count++
+                                byBranch[branchKey][statusName] = (byBranch[branchKey][statusName] ?: 0) + 1
+                            }
+                        }
                     }
-                    byBranch[branchKey].count++
-                    byBranch[branchKey][statusName]++
-                }
-                
-                // Post count
-                for (RecPost rp : reca.recpost) {
-                    def postKey = rp.id
-                    if (!byPost[postKey]) {
-                        byPost[postKey] = [
-                            postId: rp.id,
-                            designation: rp.designation?.name,
-                            count: 0
-                        ]
+                    
+                    // Post count
+                    def posts = reca.recpost
+                    if (posts) {
+                        posts.each { RecPost rp ->
+                            if (rp) {
+                                def postKey = rp.id.toString()
+                                if (!byPost[postKey]) {
+                                    byPost[postKey] = [
+                                        postId: rp.id,
+                                        designation: rp.designation?.name ?: 'Unknown',
+                                        count: 0
+                                    ]
+                                }
+                                byPost[postKey].count++
+                            }
+                        }
                     }
-                    byPost[postKey].count++
-                }
-                
-                // Category count
-                def categoryName = reca.recapplicant?.reccategory?.name ?: 'Unknown'
-                byCategory[categoryName] = (byCategory[categoryName] ?: 0) + 1
-                
-                // Fees count
-                if (reca.isfeespaid) {
-                    feesPaid++
-                } else {
-                    feesNotPaid++
+                    
+                    // Category count
+                    def categoryName = reca.recapplicant?.reccategory?.name ?: 'Unknown'
+                    byCategory[categoryName] = (byCategory[categoryName] ?: 0) + 1
+                    
+                    // Fees count
+                    if (reca.isfeespaid) {
+                        feesPaid++
+                    } else {
+                        feesNotPaid++
+                    }
+                } catch (Exception e) {
+                    println("Error processing application ${reca.id}: ${e.message}")
                 }
             }
             
@@ -648,6 +709,8 @@ class RecApplicationService_2 {
             hm.feesNotPaid = feesNotPaid
             hm.msg = "Application counts fetched successfully"
             hm.flag = true
+            
+            println("=== getApplicationCounts END ===")
             
         } catch (Exception e) {
             println("Error in getApplicationCounts: ${e.message}")
