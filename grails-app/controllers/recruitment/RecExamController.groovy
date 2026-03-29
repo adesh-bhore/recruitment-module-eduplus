@@ -200,4 +200,81 @@ class RecExamController {
     def startExam() {
         processRequestWithParams("startExam", getService())
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 3: Supervision APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 11: Get Current Exams
+     * GET /recExam/getCurrentExams
+     * Headers: EPC-UID
+     * 
+     * Get all exams scheduled for today (supervisor dashboard)
+     */
+    def getCurrentExams() {
+        processRequestWithoutParams("getCurrentExams", getService())
+    }
+    
+    /**
+     * API 12: Get Supervisors
+     * GET /recExam/getSupervisors
+     * Headers: EPC-UID
+     * 
+     * Get list of all instructors and current supervisors
+     */
+    def getSupervisors() {
+        processRequestWithoutParams("getSupervisors", getService())
+    }
+    
+    /**
+     * API 13: Appoint Supervisor
+     * POST /recExam/appointSupervisor
+     * Headers: EPC-UID
+     * Body: { instructorId }
+     * 
+     * Assign supervisor role to an instructor
+     */
+    def appointSupervisor() {
+        processRequestWithParams("appointSupervisor", getService())
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 4: Results & Selection APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 14: Get Expert Groups
+     * GET /recExam/getExpertGroups
+     * Headers: EPC-UID
+     * 
+     * Get all expert groups for result viewing and selection
+     */
+    def getExpertGroups() {
+        processRequestWithoutParams("getExpertGroups", getService())
+    }
+    
+    /**
+     * API 15: Get Results By Group
+     * GET /recExam/getResultsByGroup
+     * Headers: EPC-UID
+     * Query Params: expertGroupId (required)
+     * 
+     * View exam results by expert group (sorted by score)
+     */
+    def getResultsByGroup() {
+        processRequestWithoutParams("getResultsByGroup", getService())
+    }
+    
+    /**
+     * API 16: Save Selected Applications
+     * POST /recExam/saveSelectedApplications
+     * Headers: EPC-UID
+     * Body: { expertGroupId, cutoff, applications: [{applicationId, marks}] }
+     * 
+     * Apply cutoff and save selected/rejected candidates
+     */
+    def saveSelectedApplications() {
+        processRequestWithParams("saveSelectedApplications", getService())
+    }
 }

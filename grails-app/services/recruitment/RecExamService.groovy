@@ -991,4 +991,788 @@ class RecExamService {
             hm.flag = false
         }
     }
+    
+    // =====================================================
+    // PHASE 3: Supervision
+    // =====================================================
+    
+    /**
+     * Get current exams (today's exams for supervisor dashboard)
+     * Used by: GET /recExam/getCurrentExams
+     */
+    def getCurrentExams(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get current recruitment version
+            RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+            if (!recversion) {
+                hm.msg = "Current recruitment version not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get all exam applicant data
+            def examapplicantdata = ERPMCQExamSecretCode.findAllByRecversionAndOrganization(recversion, org)
+            
+            // Filter for today's exams
+            ArrayList currentexam = new ArrayList()
+            Date today = new Date()
+            
+            for (app in examapplicantdata) {
+                if (app.start_time == null) {
+                    continue
+                }
+                
+                Date examdate = app.start_time
+                
+                // Check if exam is scheduled for today
+                if (examdate.getDate() == today.getDate() && 
+                    examdate.getMonth() == today.getMonth() && 
+                    examdate.getYear() == today.getYear()) {
+                    
+                    currentexam.add([
+                        id: app.id,
+                        secret_code: app.secret_code,
+                        start_time: app.start_time,
+                        end_time: app.end_time,
+                        extra_time: app.extra_time,
+                        isexamgiven: app.isexamgiven,
+                        obtained_score: app.obtained_score,
+                        examgivendate: app.examgivendate,
+                        applicant: [
+                            id: app.recapplicant.id,
+                            fullname: app.recapplicant.fullname,
+                            email: app.recapplicant.email,
+                            mobilenumber: app.recapplicant.mobilenumber
+                        ],
+                        application: [
+                            id: app.recapplication.id,
+                            applicaitionid: app.recapplication.applicaitionid
+                        ],
+                        group: [
+                            id: app.recdeptgroup.id,
+                            groupno: app.recdeptgroup.groupno
+                        ]
+                    ])
+                }
+            }
+            
+            hm.currentexam = currentexam
+            hm.totalCount = currentexam.size()
+            hm.recversion = [
+                id: recversion.id,
+                version_number: recversion.version_number
+            ]
+            hm.msg = "Current exams fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getCurrentExams: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching current exams: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Get all instructors and supervisors
+     * Used by: GET /recExam/getSupervisors
+     */
+    def getSupervisors(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get all instructors
+            def allemployeesforsupervision = Instructor.findAllByOrganization(org)
+            
+            // Build supervisor list
+            ArrayList supervisorlist = new ArrayList()
+            ArrayList allInstructorsList = new ArrayList()
+            
+            for (emp in allemployeesforsupervision) {
+                Login l = Login.findByUsername(emp.uid)
+                if (l == null) {
+                    continue
+                }
+                
+                // Construct full name from person
+                String fullname = emp.uid
+                if (emp.person) {
+                    def nameParts = []
+                    if (emp.person.firstName) nameParts.add(emp.person.firstName)
+                    if (emp.person.middleName) nameParts.add(emp.person.middleName)
+                    if (emp.person.lastName) nameParts.add(emp.person.lastName)
+                    if (nameParts.size() > 0) {
+                        fullname = nameParts.join(' ')
+                    }
+                }
+                
+                boolean isSupervisor = false
+                for (role in l.roles) {
+                    if (role.role == "Supervisor") {
+                        isSupervisor = true
+                        supervisorlist.add([
+                            id: emp.id,
+                            uid: emp.uid,
+                            fullname: fullname,
+                            email: emp.official_email_id ?: emp.person?.email
+                        ])
+                        break
+                    }
+                }
+                
+                allInstructorsList.add([
+                    id: emp.id,
+                    uid: emp.uid,
+                    fullname: fullname,
+                    email: emp.official_email_id ?: emp.person?.email,
+                    isSupervisor: isSupervisor
+                ])
+            }
+            
+            hm.allInstructors = allInstructorsList
+            hm.supervisorList = supervisorlist
+            hm.totalInstructors = allInstructorsList.size()
+            hm.totalSupervisors = supervisorlist.size()
+            hm.msg = "Supervisors fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getSupervisors: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching supervisors: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Appoint supervisor role to an instructor
+     * Used by: POST /recExam/appointSupervisor
+     */
+    def appointSupervisor(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def instructorId = data?.instructorId
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!instructorId) {
+                hm.msg = "Instructor ID is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor
+            Instructor inst = Instructor.findById(instructorId as Long)
+            if (!inst) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            // Find application type
+            ApplicationType aterp = ApplicationType.findByApplication_type("ERP")
+            if (!aterp) {
+                hm.msg = "ERP application type not found"
+                hm.flag = false
+                return
+            }
+            
+            // Find role type
+            RoleType estb = RoleType.findByTypeAndApplicationtypeAndOrganization(
+                "Establishment Section", aterp, inst.organization)
+            if (!estb) {
+                hm.msg = "Establishment Section role type not found"
+                hm.flag = false
+                return
+            }
+            
+            // Find supervisor role
+            Role role_estb = Role.findByRoleAndIsRoleSetAndRoletypeAndOrganization(
+                "Supervisor", true, estb, inst.organization)
+            if (!role_estb) {
+                hm.msg = "Supervisor role not found"
+                hm.flag = false
+                return
+            }
+            
+            // Add role to login
+            Login l = Login.findByUsername(inst.uid)
+            if (!l) {
+                hm.msg = "Login not found for instructor"
+                hm.flag = false
+                return
+            }
+            
+            // Check if already has supervisor role
+            boolean alreadySupervisor = false
+            for (role in l.roles) {
+                if (role.role == "Supervisor") {
+                    alreadySupervisor = true
+                    break
+                }
+            }
+            
+            if (!alreadySupervisor) {
+                l.addToRoles(role_estb)
+                l.save(failOnError: true, flush: true)
+            }
+            
+            // Construct full name
+            String fullname = inst.uid
+            if (inst.person) {
+                def nameParts = []
+                if (inst.person.firstName) nameParts.add(inst.person.firstName)
+                if (inst.person.middleName) nameParts.add(inst.person.middleName)
+                if (inst.person.lastName) nameParts.add(inst.person.lastName)
+                if (nameParts.size() > 0) {
+                    fullname = nameParts.join(' ')
+                }
+            }
+            
+            hm.instructor = [
+                id: inst.id,
+                uid: inst.uid,
+                fullname: fullname,
+                email: inst.official_email_id ?: inst.person?.email,
+                isSupervisor: true
+            ]
+            hm.msg = alreadySupervisor ? "Instructor already has supervisor role" : "Supervisor role assigned successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in appointSupervisor: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error appointing supervisor: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    // =====================================================
+    // PHASE 4: Results & Selection
+    // =====================================================
+    
+    /**
+     * Get all expert groups for result viewing
+     * Used by: GET /recExam/getExpertGroups
+     */
+    def getExpertGroups(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get current recruitment version
+            RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+            if (!recversion) {
+                hm.msg = "Current recruitment version not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get expert groups
+            def exprtgrp = RecDeptExpertGroup.findAllByOrganizationAndRecversion(org, recversion)
+            
+            // Format response
+            def formattedGroups = []
+            exprtgrp.each { grp ->
+                def programs = []
+                grp.program?.each { prog ->
+                    programs.add([
+                        id: prog.id,
+                        name: prog.name
+                    ])
+                }
+                
+                formattedGroups.add([
+                    id: grp.id,
+                    cutoff: grp.cutoff,
+                    groupno: grp.groupno,
+                    groupname: grp.groupname,
+                    deptGroup: [
+                        id: grp.recdeptgroup?.id,
+                        groupno: grp.recdeptgroup?.groupno
+                    ],
+                    programs: programs
+                ])
+            }
+            
+            hm.expertGroups = formattedGroups
+            hm.totalCount = formattedGroups.size()
+            hm.recversion = [
+                id: recversion.id,
+                version_number: recversion.version_number
+            ]
+            hm.msg = "Expert groups fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getExpertGroups: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching expert groups: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Get results by expert group (sorted by score)
+     * Used by: GET /recExam/getResultsByGroup
+     */
+    def getResultsByGroup(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def expertGroupId = data?.expertGroupId
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!expertGroupId) {
+                hm.msg = "Expert group ID is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get current recruitment version
+            RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+            if (!recversion) {
+                hm.msg = "Current recruitment version not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get expert group
+            def xgrp = RecDeptExpertGroup.findById(expertGroupId as Long)
+            if (!xgrp) {
+                hm.msg = "Expert group not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get all exam applicant data
+            def examapplicantdata = ERPMCQExamSecretCode.findAllByRecversionAndOrganization(recversion, org)
+            
+            // Filter by expert group criteria
+            ArrayList selectedgrpwise = new ArrayList()
+            
+            for (app in examapplicantdata) {
+                // Check if dept group matches
+                if (app.recdeptgroup.id != xgrp.recdeptgroup.id) {
+                    continue
+                }
+                
+                // Check if program matches
+                def xdept = xgrp.program*.id
+                def appdept = app.recapplication.recbranch*.program*.id.flatten()
+                xdept.retainAll(appdept)
+                
+                if (xdept.size() > 0) {
+                    selectedgrpwise.add(app)
+                }
+            }
+            
+            // Sort by obtained_score (descending)
+            selectedgrpwise.sort { -it.obtained_score }
+            
+            // Format response
+            def formattedResults = []
+            selectedgrpwise.each { app ->
+                // Construct applicant name
+                String applicantName = app.recapplicant.id.toString()
+                if (app.recapplicant.person) {
+                    def nameParts = []
+                    if (app.recapplicant.person.firstName) nameParts.add(app.recapplicant.person.firstName)
+                    if (app.recapplicant.person.middleName) nameParts.add(app.recapplicant.person.middleName)
+                    if (app.recapplicant.person.lastName) nameParts.add(app.recapplicant.person.lastName)
+                    if (nameParts.size() > 0) {
+                        applicantName = nameParts.join(' ')
+                    }
+                }
+                
+                formattedResults.add([
+                    id: app.id,
+                    secret_code: app.secret_code,
+                    obtained_score: app.obtained_score,
+                    isexamgiven: app.isexamgiven,
+                    examgivendate: app.examgivendate,
+                    applicant: [
+                        id: app.recapplicant.id,
+                        fullname: applicantName,
+                        email: app.recapplicant.person?.email
+                    ],
+                    application: [
+                        id: app.recapplication.id,
+                        applicaitionid: app.recapplication.applicaitionid
+                    ],
+                    branch: app.recapplication.recbranch?.collect { branch ->
+                        [
+                            id: branch.id,
+                            name: branch.name
+                        ]
+                    }
+                ])
+            }
+            
+            hm.toppers = formattedResults
+            hm.totalCount = formattedResults.size()
+            hm.expertGroup = [
+                id: xgrp.id,
+                cutoff: xgrp.cutoff,
+                groupname: xgrp.groupname
+            ]
+            hm.recversion = [
+                id: recversion.id,
+                version_number: recversion.version_number
+            ]
+            hm.msg = "Results fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getResultsByGroup: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching results: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Save selected applications based on cutoff
+     * Used by: POST /recExam/saveSelectedApplications
+     */
+    def saveSelectedApplications(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def expertGroupId = data?.expertGroupId
+            def cutoff = data?.cutoff
+            def applications = data?.applications
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!expertGroupId) {
+                hm.msg = "Expert group ID is required"
+                hm.flag = false
+                return
+            }
+            
+            if (cutoff == null) {
+                hm.msg = "Cutoff is required"
+                hm.flag = false
+                return
+            }
+            
+            if (!applications || applications.size() == 0) {
+                hm.msg = "Applications list is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get current recruitment version
+            RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+            if (!recversion) {
+                hm.msg = "Current recruitment version not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get expert group
+            RecDeptExpertGroup recxpertgrp = RecDeptExpertGroup.findById(expertGroupId as Long)
+            if (!recxpertgrp) {
+                hm.msg = "Expert group not found"
+                hm.flag = false
+                return
+            }
+            
+            // Update cutoff in expert group
+            recxpertgrp.cutoff = cutoff as Double
+            recxpertgrp.save(flush: true, failOnError: true)
+            
+            // Get required entities
+            def ename = ERPMCQExamName.findByNameAndOrganization("VIT-FACULTY-RECRUITMENT-ONLINE-TEST", org)
+            if (!ename) {
+                hm.msg = "Exam name not found"
+                hm.flag = false
+                return
+            }
+            
+            RecExpertType recexperttype = RecExpertType.findByOranizationAndType(org, 'COMMON')
+            if (!recexperttype) {
+                hm.msg = "Expert type 'COMMON' not found"
+                hm.flag = false
+                return
+            }
+            
+            RecEvaluationParameter recevaluationparameter = RecEvaluationParameter.findByParameterAndOranizationAndRecexperttypeAndRecdeptexpertgroupAndRecversion(
+                'Written Test', org, recexperttype, recxpertgrp, recversion)
+            if (!recevaluationparameter) {
+                hm.msg = "Evaluation parameter 'Written Test' not found"
+                hm.flag = false
+                return
+            }
+            
+            RecApplicationRound round1 = RecApplicationRound.findByRoundnumberAndOrganization("1", org)
+            if (!round1) {
+                hm.msg = "Application round 1 not found"
+                hm.flag = false
+                return
+            }
+            
+            // Process each application
+            int selectedCount = 0
+            int rejectedCount = 0
+            def results = []
+            
+            for (appData in applications) {
+                def app = RecApplication.findById(appData.applicationId as Long)
+                if (!app) {
+                    continue
+                }
+                
+                double actualmarks = appData.marks as Double
+                boolean isRejected = actualmarks < (cutoff as Double)
+                
+                if (isRejected) {
+                    rejectedCount++
+                } else {
+                    selectedCount++
+                }
+                
+                // Create/update RecApplicationRoundTransaction
+                RecApplicationRoundTransaction recApplicationRoundTransaction = RecApplicationRoundTransaction.findByRecdeptexpertgroupAndRecapplicationAndOrganizationAndRecapplicationroundAndRecapplicantAndRecversion(
+                    recxpertgrp, app, org, round1, app.recapplicant, recversion)
+                
+                if (recApplicationRoundTransaction == null) {
+                    recApplicationRoundTransaction = new RecApplicationRoundTransaction()
+                }
+                
+                recApplicationRoundTransaction.recapplicationround = round1
+                recApplicationRoundTransaction.recapplication = app
+                recApplicationRoundTransaction.organization = org
+                recApplicationRoundTransaction.recversion = recversion
+                recApplicationRoundTransaction.recapplicant = app.recapplicant
+                recApplicationRoundTransaction.recdeptexpertgroup = recxpertgrp
+                recApplicationRoundTransaction.isrejected = isRejected
+                recApplicationRoundTransaction.username = uid
+                recApplicationRoundTransaction.creation_date = new Date()
+                recApplicationRoundTransaction.updation_date = new Date()
+                recApplicationRoundTransaction.creation_ip_address = request.getRemoteAddr()
+                recApplicationRoundTransaction.updation_ip_address = request.getRemoteAddr()
+                recApplicationRoundTransaction.save(failOnError: true, flush: true)
+                
+                // Create/update RecApplicationParameterWiseEvaluation
+                RecApplicationParameterWiseEvaluation parameterWiseEvaluation = RecApplicationParameterWiseEvaluation.findByOranizationAndRecversionAndRecdeptexpertgroupAndRecevaluationparameterAndRecapplicationAndRecapplicant(
+                    org, recversion, recxpertgrp, recevaluationparameter, app, app.recapplicant)
+                
+                if (parameterWiseEvaluation == null) {
+                    parameterWiseEvaluation = new RecApplicationParameterWiseEvaluation()
+                    parameterWiseEvaluation.obtained_marks = (recevaluationparameter.maxmarks * actualmarks) / ename.max_score
+                    parameterWiseEvaluation.evaluation_date = new Date()
+                    parameterWiseEvaluation.oranization = org
+                    parameterWiseEvaluation.recversion = recversion
+                    parameterWiseEvaluation.recdeptexpertgroup = recxpertgrp
+                    parameterWiseEvaluation.recevaluationparameter = recevaluationparameter
+                    parameterWiseEvaluation.recapplication = app
+                    parameterWiseEvaluation.recapplicant = app.recapplicant
+                    parameterWiseEvaluation.username = uid
+                    parameterWiseEvaluation.creation_date = new Date()
+                    parameterWiseEvaluation.updation_date = new Date()
+                    parameterWiseEvaluation.creation_ip_address = request.getRemoteAddr()
+                    parameterWiseEvaluation.updation_ip_address = request.getRemoteAddr()
+                    parameterWiseEvaluation.save(failOnError: true, flush: true)
+                }
+                
+                // Create/update RecApplicationEvaluationAvg
+                RecApplicationEvaluationAvg evaluationAvg = RecApplicationEvaluationAvg.findByOranizationAndRecversionAndRecdeptexpertgroupAndRecapplicationAndRecapplicant(
+                    org, recversion, recxpertgrp, app, app.recapplicant)
+                
+                if (evaluationAvg == null) {
+                    evaluationAvg = new RecApplicationEvaluationAvg()
+                    evaluationAvg.avg = (recevaluationparameter.maxmarks * actualmarks) / ename.max_score
+                    evaluationAvg.oranization = org
+                    evaluationAvg.recversion = recversion
+                    evaluationAvg.recdeptexpertgroup = recxpertgrp
+                    evaluationAvg.recapplication = app
+                    evaluationAvg.recapplicant = app.recapplicant
+                    evaluationAvg.username = uid
+                    evaluationAvg.creation_date = new Date()
+                    evaluationAvg.updation_date = new Date()
+                    evaluationAvg.creation_ip_address = request.getRemoteAddr()
+                    evaluationAvg.updation_ip_address = request.getRemoteAddr()
+                    evaluationAvg.save(failOnError: true, flush: true)
+                }
+                
+                // Construct applicant name
+                String applicantName = app.recapplicant.id.toString()
+                if (app.recapplicant.person) {
+                    def nameParts = []
+                    if (app.recapplicant.person.firstName) nameParts.add(app.recapplicant.person.firstName)
+                    if (app.recapplicant.person.middleName) nameParts.add(app.recapplicant.person.middleName)
+                    if (app.recapplicant.person.lastName) nameParts.add(app.recapplicant.person.lastName)
+                    if (nameParts.size() > 0) {
+                        applicantName = nameParts.join(' ')
+                    }
+                }
+                
+                results.add([
+                    applicationId: app.id,
+                    applicantName: applicantName,
+                    marks: actualmarks,
+                    status: isRejected ? 'rejected' : 'selected',
+                    isRejected: isRejected
+                ])
+            }
+            
+            hm.summary = [
+                totalProcessed: applications.size(),
+                selected: selectedCount,
+                rejected: rejectedCount,
+                cutoff: cutoff
+            ]
+            hm.results = results
+            hm.msg = "Applications processed successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in saveSelectedApplications: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error saving selected applications: ${e.message}"
+            hm.flag = false
+        }
+    }
 }
