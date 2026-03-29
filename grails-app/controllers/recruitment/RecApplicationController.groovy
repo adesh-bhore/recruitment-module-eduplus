@@ -46,6 +46,61 @@ class RecApplicationController {
     }
     
     /**
+     * Helper to prepare request data and return HashMap (for methods that handle response directly)
+     */
+    private HashMap prepareRequestData() {
+        def requestData = request.JSON
+        def uid = request.getHeader("EPC-UID")
+        
+        HashMap hm = new HashMap()
+        hm.uid = uid
+        hm.flag = true
+        
+        if (!uid) {
+            hm.flag = false
+            hm.msg = "User not authenticated"
+            return hm
+        }
+        
+        // Add all request parameters to hashmap
+        requestData.each { key, value ->
+            hm[key] = value
+        }
+        
+        hm.data = requestData
+        return hm
+    }
+    
+    /**
+     * Helper to prepare query params and return HashMap (for GET methods that handle response directly)
+     */
+    private HashMap prepareQueryParams() {
+        def uid = request.getHeader("EPC-UID")
+        
+        HashMap hm = new HashMap()
+        hm.uid = uid
+        hm.flag = true
+        
+        if (!uid) {
+            hm.flag = false
+            hm.msg = "User not authenticated"
+            return hm
+        }
+        
+        // Create data map from query parameters
+        def data = [:]
+        params.each { key, value ->
+            if (key != 'controller' && key != 'action') {
+                hm[key] = value
+                data[key] = value
+            }
+        }
+        
+        hm.data = data
+        return hm
+    }
+    
+    /**
      * Common request processing for multipart form data (file uploads)
      */
     private void processMultipartRequest(String methodName, service) {
@@ -505,12 +560,23 @@ class RecApplicationController {
      * Response: ZIP file download
      */
     def bulkDownloadDocuments() {
-        def hm = processRequestWithParams(request)
-        if (hm.flag) {
+        try {
+            def hm = prepareRequestData()
+            if (!hm.flag) {
+                render hm as JSON
+                return
+            }
+            
             def service = getService4()
             service.bulkDownloadDocuments(hm, request, response, hm.data)
-        } else {
-            render hm as JSON
+            
+            // If service set flag to false, render error
+            if (!hm.flag) {
+                render hm as JSON
+            }
+            // Otherwise response was already streamed by service
+        } catch (Exception e) {
+            render([flag: false, msg: "Error: ${e.message}"] as JSON)
         }
     }
 
@@ -559,12 +625,23 @@ class RecApplicationController {
      * Response: CSV file download
      */
     def exportApplications() {
-        def hm = processRequestWithoutParams(request)
-        if (hm.flag) {
+        try {
+            def hm = prepareQueryParams()
+            if (!hm.flag) {
+                render hm as JSON
+                return
+            }
+            
             def service = getService4()
             service.exportApplications(hm, request, response, hm.data)
-        } else {
-            render hm as JSON
+            
+            // If service set flag to false, render error
+            if (!hm.flag) {
+                render hm as JSON
+            }
+            // Otherwise response was already streamed by service
+        } catch (Exception e) {
+            render([flag: false, msg: "Error: ${e.message}"] as JSON)
         }
     }
 }
