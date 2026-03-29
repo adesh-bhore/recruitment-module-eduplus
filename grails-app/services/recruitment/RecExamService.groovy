@@ -2,6 +2,7 @@ package recruitment
 
 import grails.gorm.transactions.Transactional
 import java.security.SecureRandom
+import java.text.SimpleDateFormat
 
 /**
  * RecExamService
@@ -676,8 +677,10 @@ class RecExamService {
             }
             
             // Parse dates
-            Date parsedStartTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", startTime)
-            Date parsedEndTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", endTime)
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
+            Date parsedStartTime = sdf.parse(startTime)
+            Date parsedEndTime = sdf.parse(endTime)
             
             // Update schedule
             secret.start_time = parsedStartTime
@@ -777,8 +780,10 @@ class RecExamService {
                 recversion, org, grp)
             
             // Parse dates
-            Date parsedStartTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", startTime)
-            Date parsedEndTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", endTime)
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
+            Date parsedStartTime = sdf.parse(startTime)
+            Date parsedEndTime = sdf.parse(endTime)
             
             // Update all
             int updatedCount = 0
