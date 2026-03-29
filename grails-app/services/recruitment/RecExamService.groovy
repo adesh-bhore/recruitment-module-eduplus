@@ -14,6 +14,9 @@ import java.security.SecureRandom
  */
 @Transactional
 class RecExamService {
+    
+    // Inject InformationService
+    def informationService
 
     /**
      * Generate secret codes for shortlisted candidates
@@ -451,5 +454,541 @@ class RecExamService {
             sb.append(AB.charAt(rnd.nextInt(AB.length())))
         }
         return sb.toString()
+    }
+    
+    // =====================================================
+    // PHASE 2: Scheduling & Control
+    // =====================================================
+    
+    /**
+     * Get all department groups for scheduling
+     * Used by: GET /recExam/getGroups
+     */
+    def getGroups(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get all department groups
+            def grps = RecDeptGroup.findAllByOrganization(org)
+            
+            // Format response
+            def formattedGroups = []
+            grps.each { grp ->
+                def depts = []
+                grp.department?.each { dept ->
+                    depts.add([
+                        id: dept.id,
+                        name: dept.name
+                    ])
+                }
+                
+                formattedGroups.add([
+                    id: grp.id,
+                    groupno: grp.groupno,
+                    departments: depts
+                ])
+            }
+            
+            hm.groups = formattedGroups
+            hm.totalCount = formattedGroups.size()
+            hm.msg = "Groups fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getGroups: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching groups: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Get exam schedule for a specific group
+     * Used by: GET /recExam/getSchedule
+     */
+    def getSchedule(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def groupId = data?.groupId
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!groupId) {
+                hm.msg = "Group ID is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get current recruitment version
+            RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+            if (!recversion) {
+                hm.msg = "Current recruitment version not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get group
+            def grp = RecDeptGroup.findById(groupId as Long)
+            if (!grp) {
+                hm.msg = "Group not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get exam applicant data
+            def examapplicantdata = ERPMCQExamSecretCode.findAllByRecversionAndOrganizationAndRecdeptgroup(
+                recversion, org, grp)
+            
+            // Format response
+            def formattedData = []
+            examapplicantdata.each { secretCode ->
+                formattedData.add([
+                    id: secretCode.id,
+                    secret_code: secretCode.secret_code,
+                    start_time: secretCode.start_time,
+                    end_time: secretCode.end_time,
+                    extra_time: secretCode.extra_time,
+                    isexamgiven: secretCode.isexamgiven,
+                    obtained_score: secretCode.obtained_score,
+                    examgivendate: secretCode.examgivendate,
+                    applicant: [
+                        id: secretCode.recapplicant.id,
+                        fullname: secretCode.recapplicant.fullname,
+                        email: secretCode.recapplicant.email,
+                        mobilenumber: secretCode.recapplicant.mobilenumber
+                    ],
+                    application: [
+                        id: secretCode.recapplication.id,
+                        applicaitionid: secretCode.recapplication.applicaitionid
+                    ]
+                ])
+            }
+            
+            hm.examapplicantdata = formattedData
+            hm.group = [
+                id: grp.id,
+                groupno: grp.groupno
+            ]
+            hm.recversion = [
+                id: recversion.id,
+                version_number: recversion.version_number
+            ]
+            hm.msg = "Schedule fetched successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in getSchedule: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error fetching schedule: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Set schedule for individual candidate
+     * Used by: POST /recExam/setSchedule
+     */
+    def setSchedule(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def secretId = data?.secretId
+            def startTime = data?.startTime
+            def endTime = data?.endTime
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!secretId) {
+                hm.msg = "Secret ID is required"
+                hm.flag = false
+                return
+            }
+            
+            if (!startTime || !endTime) {
+                hm.msg = "Start time and end time are required"
+                hm.flag = false
+                return
+            }
+            
+            // Find secret code
+            def secret = ERPMCQExamSecretCode.findById(secretId as Long)
+            if (!secret) {
+                hm.msg = "Secret code not found"
+                hm.flag = false
+                return
+            }
+            
+            // Parse dates
+            Date parsedStartTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", startTime)
+            Date parsedEndTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", endTime)
+            
+            // Update schedule
+            secret.start_time = parsedStartTime
+            secret.end_time = parsedEndTime
+            secret.username = uid
+            secret.isexamgiven = false
+            secret.updation_date = new Date()
+            secret.updation_ip_address = request.getRemoteAddr()
+            secret.save(flush: true, failOnError: true)
+            
+            hm.secretCode = [
+                id: secret.id,
+                secret_code: secret.secret_code,
+                start_time: secret.start_time,
+                end_time: secret.end_time
+            ]
+            hm.msg = "Schedule set successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in setSchedule: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error setting schedule: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Set schedule for all candidates in a group
+     * Used by: POST /recExam/setScheduleForAll
+     */
+    def setScheduleForAll(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def groupId = data?.groupId
+            def startTime = data?.startTime
+            def endTime = data?.endTime
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!groupId) {
+                hm.msg = "Group ID is required"
+                hm.flag = false
+                return
+            }
+            
+            if (!startTime || !endTime) {
+                hm.msg = "Start time and end time are required"
+                hm.flag = false
+                return
+            }
+            
+            // Find instructor and organization
+            Login login = Login.findByUsername(uid)
+            if (!login) {
+                hm.msg = "Login not found"
+                hm.flag = false
+                return
+            }
+            
+            Instructor instructor = Instructor.findByUid(login.username)
+            if (!instructor) {
+                hm.msg = "Instructor not found"
+                hm.flag = false
+                return
+            }
+            
+            Organization org = instructor.organization
+            if (!org) {
+                hm.msg = "Organization not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get current recruitment version
+            RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+            if (!recversion) {
+                hm.msg = "Current recruitment version not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get group
+            def grp = RecDeptGroup.findById(groupId as Long)
+            if (!grp) {
+                hm.msg = "Group not found"
+                hm.flag = false
+                return
+            }
+            
+            // Get all exam applicants in group
+            def examapplicantdata = ERPMCQExamSecretCode.findAllByRecversionAndOrganizationAndRecdeptgroup(
+                recversion, org, grp)
+            
+            // Parse dates
+            Date parsedStartTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", startTime)
+            Date parsedEndTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss'Z'", endTime)
+            
+            // Update all
+            int updatedCount = 0
+            for (secret in examapplicantdata) {
+                secret.start_time = parsedStartTime
+                secret.end_time = parsedEndTime
+                secret.username = uid
+                secret.updation_date = new Date()
+                secret.updation_ip_address = request.getRemoteAddr()
+                secret.save(flush: true, failOnError: true)
+                updatedCount++
+            }
+            
+            hm.updatedCount = updatedCount
+            hm.group = [
+                id: grp.id,
+                groupno: grp.groupno
+            ]
+            hm.msg = "Schedule set for all candidates"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in setScheduleForAll: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error setting schedule for all: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Extend exam time for a candidate
+     * Used by: POST /recExam/extendTime
+     */
+    def extendTime(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def secretId = data?.secretId
+            def extraMinutes = data?.extraMinutes
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!secretId) {
+                hm.msg = "Secret ID is required"
+                hm.flag = false
+                return
+            }
+            
+            if (!extraMinutes) {
+                hm.msg = "Extra minutes is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find secret code
+            def secret = ERPMCQExamSecretCode.findById(secretId as Long)
+            if (!secret) {
+                hm.msg = "Secret code not found"
+                hm.flag = false
+                return
+            }
+            
+            // Extend end time
+            Calendar cal = Calendar.getInstance()
+            cal.setTime(secret.end_time)
+            cal.add(Calendar.MINUTE, extraMinutes as Integer)
+            
+            secret.extra_time = secret.extra_time + (extraMinutes as Integer)
+            secret.end_time = cal.getTime()
+            secret.username = uid
+            secret.isexamgiven = false
+            secret.updation_date = new Date()
+            secret.updation_ip_address = request.getRemoteAddr()
+            secret.save(flush: true, failOnError: true)
+            
+            hm.secretCode = [
+                id: secret.id,
+                secret_code: secret.secret_code,
+                end_time: secret.end_time,
+                extra_time: extraMinutes,
+                total_extra_time: secret.extra_time
+            ]
+            hm.msg = "Exam time extended by ${extraMinutes} minutes"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in extendTime: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error extending time: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Stop exam and calculate result
+     * Used by: POST /recExam/stopExam
+     */
+    def stopExam(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def secretId = data?.secretId
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!secretId) {
+                hm.msg = "Secret ID is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find secret code
+            def secret = ERPMCQExamSecretCode.findById(secretId as Long)
+            if (!secret) {
+                hm.msg = "Secret code not found"
+                hm.flag = false
+                return
+            }
+            
+            // Stop exam
+            secret.isexamgiven = true
+            secret.examgivendate = new Date()
+            secret.username = uid
+            secret.updation_date = new Date()
+            secret.updation_ip_address = request.getRemoteAddr()
+            secret.save(flush: true, failOnError: true)
+            
+            // Calculate result using InformationService
+            String ip = request.getRemoteAddr()
+            informationService.calculateresult(secret, ip)
+            
+            // Reload to get updated score
+            secret.refresh()
+            
+            hm.secretCode = [
+                id: secret.id,
+                secret_code: secret.secret_code,
+                isexamgiven: secret.isexamgiven,
+                examgivendate: secret.examgivendate,
+                obtained_score: secret.obtained_score
+            ]
+            hm.msg = "Exam stopped and result calculated"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in stopExam: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error stopping exam: ${e.message}"
+            hm.flag = false
+        }
+    }
+    
+    /**
+     * Start or restart exam for a candidate
+     * Used by: POST /recExam/startExam
+     */
+    def startExam(hm, request, data) {
+        try {
+            def uid = hm.remove("uid")
+            def secretId = data?.secretId
+            
+            if (!uid) {
+                hm.msg = "User not authenticated"
+                hm.flag = false
+                return
+            }
+            
+            if (!secretId) {
+                hm.msg = "Secret ID is required"
+                hm.flag = false
+                return
+            }
+            
+            // Find secret code
+            def secret = ERPMCQExamSecretCode.findById(secretId as Long)
+            if (!secret) {
+                hm.msg = "Secret code not found"
+                hm.flag = false
+                return
+            }
+            
+            // Start/restart exam
+            secret.isexamgiven = false
+            secret.examgivendate = new Date()
+            secret.username = uid
+            secret.updation_date = new Date()
+            secret.updation_ip_address = request.getRemoteAddr()
+            secret.save(flush: true, failOnError: true)
+            
+            hm.secretCode = [
+                id: secret.id,
+                secret_code: secret.secret_code,
+                isexamgiven: secret.isexamgiven,
+                start_time: secret.start_time,
+                end_time: secret.end_time
+            ]
+            hm.msg = "Exam started/restarted successfully"
+            hm.flag = true
+            
+        } catch (Exception e) {
+            println("Error in startExam: ${e.message}")
+            e.printStackTrace()
+            hm.msg = "Error starting exam: ${e.message}"
+            hm.flag = false
+        }
     }
 }

@@ -113,4 +113,91 @@ class RecExamController {
     def allocateQuestions() {
         processRequestWithoutParams("allocateQuestions", getService())
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 2: Scheduling & Control APIs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * API 4: Get Groups
+     * GET /recExam/getGroups
+     * Headers: EPC-UID
+     * 
+     * Get all department groups for scheduling
+     */
+    def getGroups() {
+        processRequestWithoutParams("getGroups", getService())
+    }
+    
+    /**
+     * API 5: Get Schedule
+     * GET /recExam/getSchedule
+     * Headers: EPC-UID
+     * Query Params: groupId (required)
+     * 
+     * Get exam schedule for a specific group
+     */
+    def getSchedule() {
+        processRequestWithoutParams("getSchedule", getService())
+    }
+    
+    /**
+     * API 6: Set Schedule
+     * POST /recExam/setSchedule
+     * Headers: EPC-UID
+     * Body: { secretId, startTime, endTime }
+     * 
+     * Set exam schedule for individual candidate
+     */
+    def setSchedule() {
+        processRequestWithParams("setSchedule", getService())
+    }
+    
+    /**
+     * API 7: Set Schedule For All
+     * POST /recExam/setScheduleForAll
+     * Headers: EPC-UID
+     * Body: { groupId, startTime, endTime }
+     * 
+     * Set same schedule for all candidates in a group
+     */
+    def setScheduleForAll() {
+        processRequestWithParams("setScheduleForAll", getService())
+    }
+    
+    /**
+     * API 8: Extend Time
+     * POST /recExam/extendTime
+     * Headers: EPC-UID
+     * Body: { secretId, extraMinutes }
+     * 
+     * Extend exam time for a candidate
+     */
+    def extendTime() {
+        processRequestWithParams("extendTime", getService())
+    }
+    
+    /**
+     * API 9: Stop Exam
+     * POST /recExam/stopExam
+     * Headers: EPC-UID
+     * Body: { secretId }
+     * 
+     * Stop exam and calculate result
+     */
+    def stopExam() {
+        processRequestWithParams("stopExam", getService())
+    }
+    
+    /**
+     * API 10: Start Exam
+     * POST /recExam/startExam
+     * Headers: EPC-UID
+     * Body: { secretId }
+     * 
+     * Start or restart exam for a candidate
+     */
+    def startExam() {
+        processRequestWithParams("startExam", getService())
+    }
 }
