@@ -4,10 +4,8 @@ import grails.converters.JSON
 
 class RecExamController {
     
-    // Helper method to get service instance
-    private RecExamService getService() {
-        return new RecExamService()
-    }
+    // Inject RecExamService using Grails dependency injection
+    RecExamService recExamService
     
     /**
      * Common request processing with parameters from request body
@@ -88,7 +86,7 @@ class RecExamController {
      * Generates secret codes for shortlisted candidates
      */
     def generateSecretCodes() {
-        processRequestWithoutParams("generateSecretCodes", getService())
+        processRequestWithoutParams("generateSecretCodes", recExamService)
     }
     
     /**
@@ -100,7 +98,7 @@ class RecExamController {
      * Get exam applicant data by group or all
      */
     def getExamApplicants() {
-        processRequestWithoutParams("getExamApplicants", getService())
+        processRequestWithoutParams("getExamApplicants", recExamService)
     }
     
     /**
@@ -111,7 +109,7 @@ class RecExamController {
      * Allocate questions to applicants based on weightage
      */
     def allocateQuestions() {
-        processRequestWithoutParams("allocateQuestions", getService())
+        processRequestWithoutParams("allocateQuestions", recExamService)
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -126,7 +124,7 @@ class RecExamController {
      * Get all department groups for scheduling
      */
     def getGroups() {
-        processRequestWithoutParams("getGroups", getService())
+        processRequestWithoutParams("getGroups", recExamService)
     }
     
     /**
@@ -138,7 +136,7 @@ class RecExamController {
      * Get exam schedule for a specific group
      */
     def getSchedule() {
-        processRequestWithoutParams("getSchedule", getService())
+        processRequestWithoutParams("getSchedule", recExamService)
     }
     
     /**
@@ -150,7 +148,7 @@ class RecExamController {
      * Set exam schedule for individual candidate
      */
     def setSchedule() {
-        processRequestWithParams("setSchedule", getService())
+        processRequestWithParams("setSchedule", recExamService)
     }
     
     /**
@@ -162,7 +160,7 @@ class RecExamController {
      * Set same schedule for all candidates in a group
      */
     def setScheduleForAll() {
-        processRequestWithParams("setScheduleForAll", getService())
+        processRequestWithParams("setScheduleForAll", recExamService)
     }
     
     /**
@@ -174,7 +172,7 @@ class RecExamController {
      * Extend exam time for a candidate
      */
     def extendTime() {
-        processRequestWithParams("extendTime", getService())
+        processRequestWithParams("extendTime", recExamService)
     }
     
     /**
@@ -186,7 +184,7 @@ class RecExamController {
      * Stop exam and calculate result
      */
     def stopExam() {
-        processRequestWithParams("stopExam", getService())
+        processRequestWithParams("stopExam", recExamService)
     }
     
     /**
@@ -198,7 +196,7 @@ class RecExamController {
      * Start or restart exam for a candidate
      */
     def startExam() {
-        processRequestWithParams("startExam", getService())
+        processRequestWithParams("startExam", recExamService)
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -213,7 +211,7 @@ class RecExamController {
      * Get all exams scheduled for today (supervisor dashboard)
      */
     def getCurrentExams() {
-        processRequestWithoutParams("getCurrentExams", getService())
+        processRequestWithoutParams("getCurrentExams", recExamService)
     }
     
     /**
@@ -224,7 +222,7 @@ class RecExamController {
      * Get list of all instructors and current supervisors
      */
     def getSupervisors() {
-        processRequestWithoutParams("getSupervisors", getService())
+        processRequestWithoutParams("getSupervisors", recExamService)
     }
     
     /**
@@ -236,7 +234,7 @@ class RecExamController {
      * Assign supervisor role to an instructor
      */
     def appointSupervisor() {
-        processRequestWithParams("appointSupervisor", getService())
+        processRequestWithParams("appointSupervisor", recExamService)
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -251,7 +249,7 @@ class RecExamController {
      * Get all expert groups for result viewing and selection
      */
     def getExpertGroups() {
-        processRequestWithoutParams("getExpertGroups", getService())
+        processRequestWithoutParams("getExpertGroups", recExamService)
     }
     
     /**
@@ -263,7 +261,7 @@ class RecExamController {
      * View exam results by expert group (sorted by score)
      */
     def getResultsByGroup() {
-        processRequestWithoutParams("getResultsByGroup", getService())
+        processRequestWithoutParams("getResultsByGroup", recExamService)
     }
     
     /**
@@ -275,6 +273,6 @@ class RecExamController {
      * Apply cutoff and save selected/rejected candidates
      */
     def saveSelectedApplications() {
-        processRequestWithParams("saveSelectedApplications", getService())
+        processRequestWithParams("saveSelectedApplications", recExamService)
     }
 }

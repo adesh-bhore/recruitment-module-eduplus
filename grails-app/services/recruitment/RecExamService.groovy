@@ -15,9 +15,6 @@ import java.text.SimpleDateFormat
  */
 @Transactional
 class RecExamService {
-    
-    // Inject InformationService
-    def informationService
 
     /**
      * Generate secret codes for shortlisted candidates
@@ -917,9 +914,9 @@ class RecExamService {
             secret.updation_ip_address = request.getRemoteAddr()
             secret.save(flush: true, failOnError: true)
             
-            // Calculate result using InformationService
+            // Calculate result
             String ip = request.getRemoteAddr()
-            informationService.calculateresult(secret, ip)
+            calculateResult(secret, ip)
             
             // Reload to get updated score
             secret.refresh()
@@ -1493,18 +1490,6 @@ class RecExamService {
             // Format response
             def formattedResults = []
             selectedgrpwise.each { app ->
-                // Construct applicant name
-                String applicantName = app.recapplicant.id.toString()
-                if (app.recapplicant.person) {
-                    def nameParts = []
-                    if (app.recapplicant.person.firstName) nameParts.add(app.recapplicant.person.firstName)
-                    if (app.recapplicant.person.middleName) nameParts.add(app.recapplicant.person.middleName)
-                    if (app.recapplicant.person.lastName) nameParts.add(app.recapplicant.person.lastName)
-                    if (nameParts.size() > 0) {
-                        applicantName = nameParts.join(' ')
-                    }
-                }
-                
                 formattedResults.add([
                     id: app.id,
                     secret_code: app.secret_code,
@@ -1513,8 +1498,8 @@ class RecExamService {
                     examgivendate: app.examgivendate,
                     applicant: [
                         id: app.recapplicant.id,
-                        fullname: applicantName,
-                        email: app.recapplicant.person?.email
+                        fullname: app.recapplicant.fullname,
+                        email: app.recapplicant.email
                     ],
                     application: [
                         id: app.recapplication.id,
@@ -1643,8 +1628,22 @@ class RecExamService {
                 return
             }
             
+            // Get evaluation parameter
             RecEvaluationParameter recevaluationparameter = RecEvaluationParameter.findByParameterAndOranizationAndRecexperttypeAndRecdeptexpertgroupAndRecversion(
                 'Written Test', org, recexperttype, recxpertgrp, recversion)
+            
+            // If not found with all criteria, try without expert group
+            if (!recevaluationparameter) {
+                recevaluationparameter = RecEvaluationParameter.findByParameterAndOranizationAndRecexperttypeAndRecversion(
+                    'Written Test', org, recexperttype, recversion)
+            }
+            
+            // If still not found, try with just parameter and organization
+            if (!recevaluationparameter) {
+                recevaluationparameter = RecEvaluationParameter.findByParameterAndOranization(
+                    'Written Test', org)
+            }
+            
             if (!recevaluationparameter) {
                 hm.msg = "Evaluation parameter 'Written Test' not found"
                 hm.flag = false
@@ -1742,21 +1741,9 @@ class RecExamService {
                     evaluationAvg.save(failOnError: true, flush: true)
                 }
                 
-                // Construct applicant name
-                String applicantName = app.recapplicant.id.toString()
-                if (app.recapplicant.person) {
-                    def nameParts = []
-                    if (app.recapplicant.person.firstName) nameParts.add(app.recapplicant.person.firstName)
-                    if (app.recapplicant.person.middleName) nameParts.add(app.recapplicant.person.middleName)
-                    if (app.recapplicant.person.lastName) nameParts.add(app.recapplicant.person.lastName)
-                    if (nameParts.size() > 0) {
-                        applicantName = nameParts.join(' ')
-                    }
-                }
-                
                 results.add([
                     applicationId: app.id,
-                    applicantName: applicantName,
+                    applicantName: app.recapplicant.fullname,
                     marks: actualmarks,
                     status: isRejected ? 'rejected' : 'selected',
                     isRejected: isRejected
@@ -1778,6 +1765,114 @@ class RecExamService {
             e.printStackTrace()
             hm.msg = "Error saving selected applications: ${e.message}"
             hm.flag = false
+        }
+    }
+
+    
+    // =====================================================
+    // HELPER METHODS
+    // =====================================================
+    
+    /**
+     * Calculate exam result for a candidate
+     * Calculates total marks from correct answers and creates evaluation record
+     */
+    private void calculateResult(ERPMCQExamSecretCode secretCode, String ip) {
+        try {
+            println("Calculating result for secret code: ${secretCode.id}")
+            
+            // Get all questions allocated to this applicant
+            def allQue = ERPMCQQuestionAllocationtoApplicant.findAllByOrganizationAndRecapplicantAndRecdeptgroup(
+                secretCode.organization, secretCode.recapplicant, secretCode.recdeptgroup)
+            
+            int correct = 0
+            double totalmarks = 0
+            TreeSet crses = new TreeSet()
+            
+            // Calculate marks
+            for (que in allQue) {
+                crses.add(que.reccourse.id)
+                if (que.studentselectedoption != null) {
+                    if (que.studentselectedoption.iscorrecetoption == true) {
+                        correct++
+                        totalmarks += que.erpmcqquestionbank.weightage
+                    }
+                }
+            }
+            
+            println("Total marks obtained: ${totalmarks}")
+            
+            // Update secret code with obtained score
+            secretCode.obtained_score = totalmarks
+            secretCode.examgivendate = new Date()
+            secretCode.end_time = new Date()
+            secretCode.isexamgiven = true
+            secretCode.save(flush: true, failOnError: true)
+            
+            // Get exam name
+            def ename = ERPMCQExamName.findByNameAndOrganization("VIT-FACULTY-RECRUITMENT-ONLINE-TEST", secretCode.organization)
+            if (!ename) {
+                println("Exam name not found")
+                return
+            }
+            
+            // Get evaluation parameter
+            RecEvaluationParameter recevaluationparameter = RecEvaluationParameter.findByParameterAndOranization(
+                'Written Test', secretCode.organization)
+            if (!recevaluationparameter) {
+                println("Evaluation parameter not found")
+                return
+            }
+            
+            // Get expert type
+            RecExpertType recexperttype = RecExpertType.findByOranizationAndType(secretCode.organization, 'COMMON')
+            if (!recexperttype) {
+                println("Expert type not found")
+                return
+            }
+            
+            // Find or create application evaluation
+            RecApplicationEvaluation recapplicationevaluation = RecApplicationEvaluation.findByOranizationAndRecversionAndRecapplicantAndRecapplicationAndRecevaluationparameterAndRecexperttype(
+                secretCode.organization, secretCode.recversion, secretCode.recapplicant, 
+                secretCode.recapplication, recevaluationparameter, recexperttype)
+            
+            // Calculate normalized marks
+            double m = (recevaluationparameter.maxmarks * secretCode.obtained_score) / ename.max_score
+            
+            if (recapplicationevaluation == null) {
+                // Create new evaluation
+                recapplicationevaluation = new RecApplicationEvaluation()
+                recapplicationevaluation.obtained_marks = m
+                recapplicationevaluation.evaluation_date = new Date()
+                recapplicationevaluation.oranization = secretCode.organization
+                recapplicationevaluation.recversion = secretCode.recversion
+                recapplicationevaluation.recapplication = secretCode.recapplication
+                recapplicationevaluation.recapplicant = secretCode.recapplicant
+                recapplicationevaluation.recevaluationparameter = recevaluationparameter
+                recapplicationevaluation.recexperttype = recexperttype
+                recapplicationevaluation.recdeptexpertgroup = null
+                recapplicationevaluation.recexpert = null
+                recapplicationevaluation.username = secretCode.recapplicant.email
+                recapplicationevaluation.creation_date = new Date()
+                recapplicationevaluation.updation_date = new Date()
+                recapplicationevaluation.creation_ip_address = ip
+                recapplicationevaluation.updation_ip_address = ip
+                recapplicationevaluation.save(flush: true, failOnError: true)
+                println("Created new evaluation record")
+            } else {
+                // Update existing evaluation
+                recapplicationevaluation.obtained_marks = m
+                recapplicationevaluation.username = secretCode.recapplicant.email
+                recapplicationevaluation.updation_date = new Date()
+                recapplicationevaluation.updation_ip_address = ip
+                recapplicationevaluation.save(flush: true, failOnError: true)
+                println("Updated existing evaluation record")
+            }
+            
+        } catch (Exception e) {
+            println("Error in calculateResult: ${e.message}")
+            e.printStackTrace()
+            throw e
         }
     }
 }
