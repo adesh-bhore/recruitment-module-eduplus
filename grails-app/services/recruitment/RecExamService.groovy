@@ -21,14 +21,13 @@ class RecExamService {
      * Used by: POST /recExam/generateSecretCodes
      */
     def generateSecretCodes(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -166,13 +165,6 @@ class RecExamService {
             hm.totalCount = statussched.size()
             hm.msg = "Secret codes generated: ${createdCount} new, ${existingCount} existing"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in generateSecretCodes: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error generating secret codes: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -180,15 +172,14 @@ class RecExamService {
      * Used by: GET /recExam/getExamApplicants
      */
     def getExamApplicants(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def groupId = data?.groupId
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def groupId = data?.groupId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -274,13 +265,6 @@ class RecExamService {
             ]
             hm.msg = "Exam applicant data fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getExamApplicants: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching exam applicants: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -288,14 +272,13 @@ class RecExamService {
      * Used by: POST /recExam/allocateQuestions
      */
     def allocateQuestions(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -432,13 +415,6 @@ class RecExamService {
             hm.totalAllocations = all.size()
             hm.msg = "Questions allocated successfully: ${allocatedCount} new allocations, ${skippedCount} skipped (already allocated)"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in allocateQuestions: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error allocating questions: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -463,14 +439,13 @@ class RecExamService {
      * Used by: GET /recExam/getGroups
      */
     def getGroups(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -519,13 +494,6 @@ class RecExamService {
             hm.totalCount = formattedGroups.size()
             hm.msg = "Groups fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getGroups: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching groups: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -533,15 +501,14 @@ class RecExamService {
      * Used by: GET /recExam/getSchedule
      */
     def getSchedule(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def groupId = data?.groupId
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def groupId = data?.groupId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!groupId) {
                 hm.msg = "Group ID is required"
@@ -627,13 +594,6 @@ class RecExamService {
             ]
             hm.msg = "Schedule fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getSchedule: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching schedule: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -641,17 +601,16 @@ class RecExamService {
      * Used by: POST /recExam/setSchedule
      */
     def setSchedule(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def secretId = data?.secretId
-            def startTime = data?.startTime
-            def endTime = data?.endTime
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def secretId = data?.secretId
+        def startTime = data?.startTime
+        def endTime = data?.endTime
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!secretId) {
                 hm.msg = "Secret ID is required"
@@ -696,13 +655,6 @@ class RecExamService {
             ]
             hm.msg = "Schedule set successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in setSchedule: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error setting schedule: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -710,17 +662,16 @@ class RecExamService {
      * Used by: POST /recExam/setScheduleForAll
      */
     def setScheduleForAll(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def groupId = data?.groupId
-            def startTime = data?.startTime
-            def endTime = data?.endTime
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def groupId = data?.groupId
+        def startTime = data?.startTime
+        def endTime = data?.endTime
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!groupId) {
                 hm.msg = "Group ID is required"
@@ -801,13 +752,6 @@ class RecExamService {
             ]
             hm.msg = "Schedule set for all candidates"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in setScheduleForAll: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error setting schedule for all: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -815,16 +759,15 @@ class RecExamService {
      * Used by: POST /recExam/extendTime
      */
     def extendTime(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def secretId = data?.secretId
-            def extraMinutes = data?.extraMinutes
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def secretId = data?.secretId
+        def extraMinutes = data?.extraMinutes
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!secretId) {
                 hm.msg = "Secret ID is required"
@@ -868,13 +811,6 @@ class RecExamService {
             ]
             hm.msg = "Exam time extended by ${extraMinutes} minutes"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in extendTime: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error extending time: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -882,15 +818,14 @@ class RecExamService {
      * Used by: POST /recExam/stopExam
      */
     def stopExam(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def secretId = data?.secretId
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def secretId = data?.secretId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!secretId) {
                 hm.msg = "Secret ID is required"
@@ -930,13 +865,6 @@ class RecExamService {
             ]
             hm.msg = "Exam stopped and result calculated"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in stopExam: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error stopping exam: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -944,15 +872,14 @@ class RecExamService {
      * Used by: POST /recExam/startExam
      */
     def startExam(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def secretId = data?.secretId
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def secretId = data?.secretId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!secretId) {
                 hm.msg = "Secret ID is required"
@@ -985,13 +912,6 @@ class RecExamService {
             ]
             hm.msg = "Exam started/restarted successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in startExam: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error starting exam: ${e.message}"
-            hm.flag = false
-        }
     }
     
     // =====================================================
@@ -1003,14 +923,13 @@ class RecExamService {
      * Used by: GET /recExam/getCurrentExams
      */
     def getCurrentExams(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -1096,13 +1015,6 @@ class RecExamService {
             ]
             hm.msg = "Current exams fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getCurrentExams: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching current exams: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1110,14 +1022,13 @@ class RecExamService {
      * Used by: GET /recExam/getSupervisors
      */
     def getSupervisors(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -1195,13 +1106,6 @@ class RecExamService {
             hm.totalSupervisors = supervisorlist.size()
             hm.msg = "Supervisors fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getSupervisors: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching supervisors: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1209,15 +1113,14 @@ class RecExamService {
      * Used by: POST /recExam/appointSupervisor
      */
     def appointSupervisor(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def instructorId = data?.instructorId
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def instructorId = data?.instructorId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!instructorId) {
                 hm.msg = "Instructor ID is required"
@@ -1302,13 +1205,6 @@ class RecExamService {
             ]
             hm.msg = alreadySupervisor ? "Instructor already has supervisor role" : "Supervisor role assigned successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in appointSupervisor: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error appointing supervisor: ${e.message}"
-            hm.flag = false
-        }
     }
     
     // =====================================================
@@ -1320,14 +1216,13 @@ class RecExamService {
      * Used by: GET /recExam/getExpertGroups
      */
     def getExpertGroups(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             // Find instructor and organization
             Login login = Login.findByUsername(uid)
@@ -1394,13 +1289,6 @@ class RecExamService {
             ]
             hm.msg = "Expert groups fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getExpertGroups: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching expert groups: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1408,15 +1296,14 @@ class RecExamService {
      * Used by: GET /recExam/getResultsByGroup
      */
     def getResultsByGroup(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def expertGroupId = data?.expertGroupId
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def expertGroupId = data?.expertGroupId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!expertGroupId) {
                 hm.msg = "Expert group ID is required"
@@ -1527,13 +1414,6 @@ class RecExamService {
             ]
             hm.msg = "Results fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getResultsByGroup: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching results: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1541,17 +1421,16 @@ class RecExamService {
      * Used by: POST /recExam/saveSelectedApplications
      */
     def saveSelectedApplications(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def expertGroupId = data?.expertGroupId
-            def cutoff = data?.cutoff
-            def applications = data?.applications
-            
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
-            }
+        def uid = hm.remove("uid")
+        def expertGroupId = data?.expertGroupId
+        def cutoff = data?.cutoff
+        def applications = data?.applications
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
             
             if (!expertGroupId) {
                 hm.msg = "Expert group ID is required"
@@ -1759,13 +1638,6 @@ class RecExamService {
             hm.results = results
             hm.msg = "Applications processed successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in saveSelectedApplications: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error saving selected applications: ${e.message}"
-            hm.flag = false
-        }
     }
 
     
