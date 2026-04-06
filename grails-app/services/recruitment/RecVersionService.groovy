@@ -23,15 +23,14 @@ class RecVersionService {
      * Returns: academic years, organizations (if management), current academic year, rec versions
      */
     def getStatisticsFilterData(hm, request) {
-        try {
-            def inst = hm.remove("inst")
-            def org = hm.remove("org")
+        def inst = hm.remove("inst")
+        def org = hm.remove("org")
 
-            if (!inst || !org) {
-                hm.msg = "Instructor or Organization not found"
-                hm.flag = false
-                return
-            }
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
 
             // Get ApplicationType for ERP
             ApplicationType at = ApplicationType.findByApplication_type("ERP")
@@ -151,13 +150,6 @@ class RecVersionService {
             hm.is_management = is_management
             hm.msg = "Filter data fetched successfully"
             hm.flag = true
-
-        } catch (Exception e) {
-            println("Error in getStatisticsFilterData: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching filter data: ${e.message}"
-            hm.flag = false
-        }
     }
 
     /**
@@ -165,15 +157,14 @@ class RecVersionService {
      * Returns: List of recruitment versions for the selected academic year and organization
      */
     def getRecVersionDetails(hm, request, data) {
-        try {
-            def inst = hm.remove("inst")
-            def org = hm.remove("org")
+        def inst = hm.remove("inst")
+        def org = hm.remove("org")
 
-            if (!inst || !org) {
-                hm.msg = "Instructor or Organization not found"
-                hm.flag = false
-                return
-            }
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
 
             // Get parameters from request
             def ayId = data.ay
@@ -238,13 +229,6 @@ class RecVersionService {
             ]
             hm.msg = "Recruitment versions fetched successfully"
             hm.flag = true
-
-        } catch (Exception e) {
-            println("Error in getRecVersionDetails: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching recruitment versions: ${e.message}"
-            hm.flag = false
-        }
     }
 
     /**
@@ -252,15 +236,14 @@ class RecVersionService {
      * Returns: Matrix of applications by branch and post with totals
      */
     def getStatisticsSummaryReport(hm, request, data) {
-        try {
-            def inst = hm.remove("inst")
-            def org = hm.remove("org")
+        def inst = hm.remove("inst")
+        def org = hm.remove("org")
 
-            if (!inst || !org) {
-                hm.msg = "Instructor or Organization not found"
-                hm.flag = false
-                return
-            }
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
 
             // Get parameters
             def ayId = data.ay
@@ -476,13 +459,6 @@ class RecVersionService {
             ]
             hm.msg = "Statistics summary report generated successfully"
             hm.flag = true
-
-        } catch (Exception e) {
-            println("Error in getStatisticsSummaryReport: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error generating statistics report: ${e.message}"
-            hm.flag = false
-        }
     }
 
     /**
@@ -490,15 +466,14 @@ class RecVersionService {
      * Returns: Count of applications for a specific post
      */
     def getTotalPostCounts(hm, request, data) {
-        try {
-            def inst = hm.remove("inst")
-            def org = hm.remove("org")
+        def inst = hm.remove("inst")
+        def org = hm.remove("org")
 
-            if (!inst || !org) {
-                hm.msg = "Instructor or Organization not found"
-                hm.flag = false
-                return
-            }
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
 
             // Get parameters
             def ayId = data.ay
@@ -625,13 +600,6 @@ class RecVersionService {
             ]
             hm.msg = "Post count fetched successfully"
             hm.flag = true
-
-        } catch (Exception e) {
-            println("Error in getTotalPostCounts: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching post counts: ${e.message}"
-            hm.flag = false
-        }
     }
 
     /**
@@ -639,15 +607,14 @@ class RecVersionService {
      * Returns: Count of applications for a specific branch
      */
     def getTotalDeptCounts(hm, request, data) {
-        try {
-            def inst = hm.remove("inst")
-            def org = hm.remove("org")
+        def inst = hm.remove("inst")
+        def org = hm.remove("org")
 
-            if (!inst || !org) {
-                hm.msg = "Instructor or Organization not found"
-                hm.flag = false
-                return
-            }
+        if (!inst || !org) {
+            hm.msg = "Instructor or Organization not found"
+            hm.flag = false
+            return
+        }
 
             // Get parameters
             def ayId = data.ay
@@ -766,12 +733,5 @@ class RecVersionService {
             ]
             hm.msg = "Department count fetched successfully"
             hm.flag = true
-
-        } catch (Exception e) {
-            println("Error in getTotalDeptCounts: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching department counts: ${e.message}"
-            hm.flag = false
-        }
     }
 }

@@ -15,8 +15,7 @@ class RecApplicationService_2 {
      * Used by: GET /recApplication/getAuthorityApplications
      */
     def getAuthorityApplications(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
+        def uid = hm.remove("uid")
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -108,13 +107,6 @@ class RecApplicationService_2 {
             hm.authorityList = authoritylist
             hm.msg = "Authority list fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getAuthorityApplications: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching authority list: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -122,17 +114,16 @@ class RecApplicationService_2 {
      * Used by: GET /recApplication/getApplicationSummary
      */
     def getApplicationSummary(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def authorityType = hm.remove("authorityType")
-            def recverId = hm.remove("recver")
-            def status = hm.remove("status")
-            def branchId = hm.remove("recbranch")
-            def postId = hm.remove("recpost")
-            def fromdate = hm.remove("fromdate")
-            def todate = hm.remove("todate")
-            def page = hm.remove("page") ? hm.remove("page").toInteger() : 1
-            def pageSize = hm.remove("pageSize") ? hm.remove("pageSize").toInteger() : 50
+        def uid = hm.remove("uid")
+        def authorityType = hm.remove("authorityType")
+        def recverId = hm.remove("recver")
+        def status = hm.remove("status")
+        def branchId = hm.remove("recbranch")
+        def postId = hm.remove("recpost")
+        def fromdate = hm.remove("fromdate")
+        def todate = hm.remove("todate")
+        def page = hm.remove("page") ? hm.remove("page").toInteger() : 1
+        def pageSize = hm.remove("pageSize") ? hm.remove("pageSize").toInteger() : 50
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -236,13 +227,6 @@ class RecApplicationService_2 {
             hm.applications = paginatedApplications
             hm.msg = "Applications fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicationSummary: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching applications: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -318,13 +302,12 @@ class RecApplicationService_2 {
      * Used by: GET /recApplication/getDetailedApplicationList
      */
     def getDetailedApplicationList(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def authorityType = hm.remove("authorityType")
-            def recverId = hm.remove("recver")
-            def status = hm.remove("status")
-            def branchId = hm.remove("recbranch")
-            def applicationId = hm.remove("applicationId")
+        def uid = hm.remove("uid")
+        def authorityType = hm.remove("authorityType")
+        def recverId = hm.remove("recver")
+        def status = hm.remove("status")
+        def branchId = hm.remove("recbranch")
+        def applicationId = hm.remove("applicationId")
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -514,13 +497,6 @@ class RecApplicationService_2 {
             hm.applications = applications
             hm.msg = "Detailed applications fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getDetailedApplicationList: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching detailed applications: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -528,13 +504,12 @@ class RecApplicationService_2 {
      * Used by: GET /recApplication/getApplicationCounts
      */
     def getApplicationCounts(hm, request, data) {
-        try {
-            println("=== getApplicationCounts START ===")
-            def uid = hm.remove("uid")
-            def authorityType = data?.authorityType
-            def recverId = data?.recver
-            
-            println("uid: ${uid}, authorityType: ${authorityType}, recverId: ${recverId}")
+        println("=== getApplicationCounts START ===")
+        def uid = hm.remove("uid")
+        def authorityType = data?.authorityType
+        def recverId = data?.recver
+        
+        println("uid: ${uid}, authorityType: ${authorityType}, recverId: ${recverId}")
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -711,13 +686,6 @@ class RecApplicationService_2 {
             hm.flag = true
             
             println("=== getApplicationCounts END ===")
-            
-        } catch (Exception e) {
-            println("Error in getApplicationCounts: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching application counts: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -725,9 +693,8 @@ class RecApplicationService_2 {
      * Used by: GET /recApplication/getApplicationData
      */
     def getApplicationData(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationId = hm.remove("applicationId")
+        def uid = hm.remove("uid")
+        def applicationId = hm.remove("applicationId")
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -892,13 +859,6 @@ class RecApplicationService_2 {
             
             hm.msg = "Application data fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicationData: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching application data: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -906,13 +866,12 @@ class RecApplicationService_2 {
      * Used by: GET /recApplication/getApplicantsList
      */
     def getApplicantsList(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def recverId = hm.remove("recver")
-            def category = hm.remove("category")
-            def searchText = hm.remove("searchText")
-            def page = hm.remove("page") ? hm.remove("page").toInteger() : 1
-            def pageSize = hm.remove("pageSize") ? hm.remove("pageSize").toInteger() : 50
+        def uid = hm.remove("uid")
+        def recverId = hm.remove("recver")
+        def category = hm.remove("category")
+        def searchText = hm.remove("searchText")
+        def page = hm.remove("page") ? hm.remove("page").toInteger() : 1
+        def pageSize = hm.remove("pageSize") ? hm.remove("pageSize").toInteger() : 50
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -988,13 +947,6 @@ class RecApplicationService_2 {
             hm.applicants = paginatedApplicants
             hm.msg = "Applicants list fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicantsList: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching applicants list: ${e.message}"
-            hm.flag = false
-        }
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -1006,13 +958,12 @@ class RecApplicationService_2 {
      * Used by: POST /recApplication/processApplication
      */
     def processApplication(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationId = data.applicationId
-            def branchId = data.branchId
-            def authorityTypeId = data.authorityTypeId
-            def action = data.action // 'approve', 'reject', 'shortlist'
-            def remark = data.remark
+        def uid = hm.remove("uid")
+        def applicationId = data.applicationId
+        def branchId = data.branchId
+        def authorityTypeId = data.authorityTypeId
+        def action = data.action // 'approve', 'reject', 'shortlist'
+        def remark = data.remark
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -1098,13 +1049,6 @@ class RecApplicationService_2 {
             hm.flag = true
             hm.applicationId = recapplication.id
             hm.status = statusName
-            
-        } catch (Exception e) {
-            println("Error in processApplication: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error processing application: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1112,11 +1056,10 @@ class RecApplicationService_2 {
      * Used by: POST /recApplication/notifyShortlistedCandidates
      */
     def notifyShortlistedCandidates(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationIds = data.applicationIds // Array of application IDs
-            def emailSubject = data.emailSubject
-            def emailBody = data.emailBody
+        def uid = hm.remove("uid")
+        def applicationIds = data.applicationIds // Array of application IDs
+        def emailSubject = data.emailSubject
+        def emailBody = data.emailBody
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -1174,13 +1117,6 @@ class RecApplicationService_2 {
             hm.failedCount = failedCount
             hm.msg = "Notification sent to ${notifiedCount} candidates"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in notifyShortlistedCandidates: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error sending notifications: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1188,12 +1124,11 @@ class RecApplicationService_2 {
      * Used by: POST /recApplication/rejectApplication
      */
     def rejectApplication(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationId = data.applicationId
-            def branchId = data.branchId
-            def authorityTypeId = data.authorityTypeId
-            def rejectionReason = data.rejectionReason
+        def uid = hm.remove("uid")
+        def applicationId = data.applicationId
+        def branchId = data.branchId
+        def authorityTypeId = data.authorityTypeId
+        def rejectionReason = data.rejectionReason
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -1250,13 +1185,6 @@ class RecApplicationService_2 {
             hm.msg = "Application rejected successfully"
             hm.flag = true
             hm.applicationId = recapplication.id
-            
-        } catch (Exception e) {
-            println("Error in rejectApplication: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error rejecting application: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1264,12 +1192,11 @@ class RecApplicationService_2 {
      * Used by: POST /recApplication/markAttendance
      */
     def markAttendance(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationId = data.applicationId
-            def branchId = data.branchId
-            def isPresent = data.isPresent // true/false
-            def attendanceRemark = data.attendanceRemark
+        def uid = hm.remove("uid")
+        def applicationId = data.applicationId
+        def branchId = data.branchId
+        def isPresent = data.isPresent // true/false
+        def attendanceRemark = data.attendanceRemark
             
             if (!uid) {
                 hm.msg = "User not authenticated"
@@ -1324,12 +1251,5 @@ class RecApplicationService_2 {
             hm.flag = true
             hm.applicationId = recapplication.id
             hm.attendance = isPresent ? "Present" : "Absent"
-            
-        } catch (Exception e) {
-            println("Error in markAttendance: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error marking attendance: ${e.message}"
-            hm.flag = false
-        }
     }
 }

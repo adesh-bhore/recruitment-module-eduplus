@@ -6,35 +6,56 @@ import grails.converters.*
 
 class RecVersionController {
 	static responseFormats = ['json', 'xml']
+    
+    // Inject RecVersionService using Grails dependency injection
+    def recVersionService
+    def recVersionService_2
 
-    def handleException(Exception e) {
-        HashMap hashMap=new HashMap()
-        hashMap.put("error_msg",e.message)
+    /**
+     * Common exception handler
+     */
+    private def handleException(Exception e) {
+        println("Exception in RecVersionController: ${e.message}")
+        e.printStackTrace()
+        HashMap hashMap = new HashMap()
+        hashMap.put("error_msg", e.message)
+        hashMap.put("flag", false)
         render hashMap as JSON
         return
     }
 
-    def processRequest(serviceMethod) {
-        println("Processing request for : ${serviceMethod}")
-
-        HashMap hm = new HashMap()
-        hm.putAll(commonData(request))
-        hm.put("msg","Failed!!!")
-        hm.put("flag",false)
-        RecVersionService ms = new RecVersionService()
-        ms."${serviceMethod}"(hm,request,request.JSON)
-        render hm as JSON
+    /**
+     * Process request with JSON body parameters
+     */
+    private def processRequest(String serviceMethod) {
+        try {
+            println("Processing request for: ${serviceMethod}")
+            HashMap hm = new HashMap()
+            hm.putAll(commonData(request))
+            hm.put("msg", "Failed!!!")
+            hm.put("flag", false)
+            recVersionService."${serviceMethod}"(hm, request, request.JSON)
+            render hm as JSON
+        } catch (Exception e) {
+            handleException(e)
+        }
     }
     
-    def processRequestWithoutParams(String methodName) {
-        println "In $methodName"
-        HashMap hm = new HashMap()
-        hm.putAll(commonData(request))
-        hm.put("msg","Failed!!!")
-        hm.put("flag",false)
-        RecVersionService obj =  new RecVersionService()
-        obj."$methodName"(hm, request)
-        render hm as JSON
+    /**
+     * Process request without body parameters (GET requests)
+     */
+    private def processRequestWithoutParams(String methodName) {
+        try {
+            println("In ${methodName}")
+            HashMap hm = new HashMap()
+            hm.putAll(commonData(request))
+            hm.put("msg", "Failed!!!")
+            hm.put("flag", false)
+            recVersionService."${methodName}"(hm, request)
+            render hm as JSON
+        } catch (Exception e) {
+            handleException(e)
+        }
     }
     
     def commonData(request){
@@ -121,14 +142,17 @@ class RecVersionController {
      * Returns: JSON with list of candidates with their details, addresses, and document counts
      */
     def getcandidatelist() {
-        println("Processing request for getcandidatelist")
-        HashMap hm = new HashMap()
-        hm.putAll(commonData(request))
-        hm.put("msg","Failed!!!")
-        hm.put("flag",false)
-        RecVersionService_2 service = new RecVersionService_2()
-        service.getCandidateList(hm, request, request.JSON)
-        render hm as JSON
+        try {
+            println("Processing request for getcandidatelist")
+            HashMap hm = new HashMap()
+            hm.putAll(commonData(request))
+            hm.put("msg", "Failed!!!")
+            hm.put("flag", false)
+            recVersionService_2.getCandidateList(hm, request, request.JSON)
+            render hm as JSON
+        } catch (Exception e) {
+            handleException(e)
+        }
     }
 
     /**
@@ -140,18 +164,21 @@ class RecVersionController {
      * Returns: ZIP file with all documents from selected applications
      */
     def downloadSelecteddocuments() {
-        println("Processing request for downloadSelecteddocuments")
-        HashMap hm = new HashMap()
-        hm.putAll(commonData(request))
-        hm.put("msg","Failed!!!")
-        hm.put("flag",false)
-        RecVersionService_2 service = new RecVersionService_2()
-        service.downloadSelectedDocuments(hm, request, response, request.JSON)
-        
-        // If it's a file download, don't render JSON
-        if (!hm.isFileDownload) {
-            render hm as JSON
+        try {
+            println("Processing request for downloadSelecteddocuments")
+            HashMap hm = new HashMap()
+            hm.putAll(commonData(request))
+            hm.put("msg", "Failed!!!")
+            hm.put("flag", false)
+            recVersionService_2.downloadSelectedDocuments(hm, request, response, request.JSON)
+            
+            // If it's a file download, don't render JSON
+            if (!hm.isFileDownload) {
+                render hm as JSON
+            }
+            // Otherwise, the ZIP file has already been written to response.outputStream
+        } catch (Exception e) {
+            handleException(e)
         }
-        // Otherwise, the ZIP file has already been written to response.outputStream
     }
 }

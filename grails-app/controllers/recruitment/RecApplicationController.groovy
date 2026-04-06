@@ -4,13 +4,23 @@ import grails.converters.JSON
 
 class RecApplicationController {
     
-    // Helper methods to get service instances
-    private RecApplicationService_1 getService1() {
-        return new RecApplicationService_1()
-    }
+    // Inject services using Grails dependency injection
+    def recApplicationService_1
+    def recApplicationService_2
+    def recApplicationService_3
+    def recApplicationService_4
     
-    private RecApplicationService_2 getService2() {
-        return new RecApplicationService_2()
+    /**
+     * Common exception handler
+     */
+    private def handleException(Exception e) {
+        println("Exception in RecApplicationController: ${e.message}")
+        e.printStackTrace()
+        HashMap hashMap = new HashMap()
+        hashMap.put("error_msg", e.message)
+        hashMap.put("flag", false)
+        render hashMap as JSON
+        return
     }
     
     /**
@@ -40,8 +50,7 @@ class RecApplicationController {
             render hm as JSON
             
         } catch (Exception e) {
-            println("Error in processRequestWithParams: ${e.message}")
-            render([flag: false, msg: "Error processing request: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
     
@@ -131,9 +140,7 @@ class RecApplicationController {
             render hm as JSON
             
         } catch (Exception e) {
-            println("Error in processMultipartRequest: ${e.message}")
-            e.printStackTrace()
-            render([flag: false, msg: "Error processing request: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
     
@@ -167,8 +174,7 @@ class RecApplicationController {
             render hm as JSON
             
         } catch (Exception e) {
-            println("Error in processRequestWithoutParams: ${e.message}")
-            render([flag: false, msg: "Error processing request: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
     
@@ -182,7 +188,7 @@ class RecApplicationController {
      * Headers: EPC-UID
      */
     def getActiveRecruitments() {
-        processRequestWithoutParams("getActiveRecruitments", getService1())
+        processRequestWithoutParams("getActiveRecruitments", recApplicationService_1)
     }
     
     /**
@@ -192,7 +198,7 @@ class RecApplicationController {
      * Query Params: recver (recruitment version ID)
      */
     def getApplicationFormData() {
-        processRequestWithoutParams("getApplicationFormData", getService1())
+        processRequestWithoutParams("getApplicationFormData", recApplicationService_1)
     }
     
     /**
@@ -224,7 +230,7 @@ class RecApplicationController {
      * }
      */
     def submitApplication() {
-        processRequestWithParams("submitApplication", getService1())
+        processRequestWithParams("submitApplication", recApplicationService_1)
     }
     
     /**
@@ -233,7 +239,7 @@ class RecApplicationController {
      * Headers: EPC-UID
      */
     def getMyApplications() {
-        processRequestWithoutParams("getMyApplications", getService1())
+        processRequestWithoutParams("getMyApplications", recApplicationService_1)
     }
     
     /**
@@ -243,7 +249,7 @@ class RecApplicationController {
      * Query Params: applicationId (application ID)
      */
     def getApplicationDetails() {
-        processRequestWithoutParams("getApplicationDetails", getService1())
+        processRequestWithoutParams("getApplicationDetails", recApplicationService_1)
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -256,7 +262,7 @@ class RecApplicationController {
      * Headers: EPC-UID
      */
     def getDocumentTypes() {
-        processRequestWithoutParams("getDocumentTypes", getService1())
+        processRequestWithoutParams("getDocumentTypes", recApplicationService_1)
     }
     
     /**
@@ -269,7 +275,7 @@ class RecApplicationController {
      *   documentname: File (the file to upload)
      */
     def uploadDocument() {
-        processMultipartRequest("uploadDocument", getService1())
+        processMultipartRequest("uploadDocument", recApplicationService_1)
     }
     
     /**
@@ -279,7 +285,7 @@ class RecApplicationController {
      * Query Params: documentId (document ID)
      */
     def downloadDocument() {
-        processRequestWithoutParams("downloadDocument", getService1())
+        processRequestWithoutParams("downloadDocument", recApplicationService_1)
     }
     
     /**
@@ -289,7 +295,7 @@ class RecApplicationController {
      * Request Body: { documentId: Long }
      */
     def deleteDocument() {
-        processRequestWithParams("deleteDocument", getService1())
+        processRequestWithParams("deleteDocument", recApplicationService_1)
     }
     
     /**
@@ -299,7 +305,7 @@ class RecApplicationController {
      * Query Params: applicantId (optional, defaults to logged-in user)
      */
     def getApplicantPhoto() {
-        processRequestWithoutParams("getApplicantPhoto", getService1())
+        processRequestWithoutParams("getApplicantPhoto", recApplicationService_1)
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -313,7 +319,7 @@ class RecApplicationController {
      * Query Params: applicationId (application ID)
      */
     def getApplicationPreview() {
-        processRequestWithoutParams("getApplicationPreview", getService1())
+        processRequestWithoutParams("getApplicationPreview", recApplicationService_1)
     }
     
     /**
@@ -326,7 +332,7 @@ class RecApplicationController {
      * Returns presigned AWS S3 URL for direct file download
      */
     def downloadDocumentFile() {
-        processRequestWithoutParams("downloadDocumentFile", getService1())
+        processRequestWithoutParams("downloadDocumentFile", recApplicationService_1)
     }
 
     
@@ -340,7 +346,7 @@ class RecApplicationController {
      * Headers: EPC-UID
      */
     def getAuthorityApplications() {
-        processRequestWithoutParams("getAuthorityApplications", getService2())
+        processRequestWithoutParams("getAuthorityApplications", recApplicationService_2)
     }
     
     /**
@@ -350,7 +356,7 @@ class RecApplicationController {
      * Query Params: authorityType, recver, status, recbranch, recpost, fromdate, todate, page, pageSize
      */
     def getApplicationSummary() {
-        processRequestWithoutParams("getApplicationSummary", getService2())
+        processRequestWithoutParams("getApplicationSummary", recApplicationService_2)
     }
     
     /**
@@ -360,7 +366,7 @@ class RecApplicationController {
      * Query Params: authorityType, recver, status, recbranch, applicationId
      */
     def getDetailedApplicationList() {
-        processRequestWithoutParams("getDetailedApplicationList", getService2())
+        processRequestWithoutParams("getDetailedApplicationList", recApplicationService_2)
     }
     
     /**
@@ -370,7 +376,7 @@ class RecApplicationController {
      * Query Params: authorityType, recver
      */
     def getApplicationCounts() {
-        processRequestWithoutParams("getApplicationCounts", getService2())
+        processRequestWithoutParams("getApplicationCounts", recApplicationService_2)
     }
     
     /**
@@ -380,7 +386,7 @@ class RecApplicationController {
      * Query Params: applicationId
      */
     def getApplicationData() {
-        processRequestWithoutParams("getApplicationData", getService2())
+        processRequestWithoutParams("getApplicationData", recApplicationService_2)
     }
     
     /**
@@ -390,7 +396,7 @@ class RecApplicationController {
      * Query Params: recver, category, searchText, page, pageSize
      */
     def getApplicantsList() {
-        processRequestWithoutParams("getApplicantsList", getService2())
+        processRequestWithoutParams("getApplicantsList", recApplicationService_2)
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -410,7 +416,7 @@ class RecApplicationController {
      * }
      */
     def processApplication() {
-        processRequestWithParams("processApplication", getService2())
+        processRequestWithParams("processApplication", recApplicationService_2)
     }
     
     /**
@@ -424,7 +430,7 @@ class RecApplicationController {
      * }
      */
     def notifyShortlistedCandidates() {
-        processRequestWithParams("notifyShortlistedCandidates", getService2())
+        processRequestWithParams("notifyShortlistedCandidates", recApplicationService_2)
     }
     
     /**
@@ -439,7 +445,7 @@ class RecApplicationController {
      * }
      */
     def rejectApplication() {
-        processRequestWithParams("rejectApplication", getService2())
+        processRequestWithParams("rejectApplication", recApplicationService_2)
     }
     
     /**
@@ -454,7 +460,7 @@ class RecApplicationController {
      * }
      */
     def markAttendance() {
-        processRequestWithParams("markAttendance", getService2())
+        processRequestWithParams("markAttendance", recApplicationService_2)
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -470,7 +476,7 @@ class RecApplicationController {
      * }
      */
     def getQualificationDetails() {
-        processRequestWithoutParams("getQualificationDetails", getService3())
+        processRequestWithoutParams("getQualificationDetails", recApplicationService_3)
     }
 
     /**
@@ -490,7 +496,7 @@ class RecApplicationController {
      * }
      */
     def updateQualification() {
-        processRequestWithParams("updateQualification", getService3())
+        processRequestWithParams("updateQualification", recApplicationService_3)
     }
 
     /**
@@ -502,7 +508,7 @@ class RecApplicationController {
      * }
      */
     def deleteQualification() {
-        processRequestWithParams("deleteQualification", getService3())
+        processRequestWithParams("deleteQualification", recApplicationService_3)
     }
 
     /**
@@ -514,7 +520,7 @@ class RecApplicationController {
      * }
      */
     def getExperienceDetails() {
-        processRequestWithoutParams("getExperienceDetails", getService3())
+        processRequestWithoutParams("getExperienceDetails", recApplicationService_3)
     }
 
     /**
@@ -527,19 +533,7 @@ class RecApplicationController {
      * }
      */
     def getDegreesByExam() {
-        processRequestWithoutParams("getDegreesByExam", getService3())
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // Helper Methods
-    // ═══════════════════════════════════════════════════════════════
-
-    private RecApplicationService_3 getService3() {
-        return new RecApplicationService_3()
-    }
-
-    private RecApplicationService_4 getService4() {
-        return new RecApplicationService_4()
+        processRequestWithoutParams("getDegreesByExam", recApplicationService_3)
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -567,8 +561,7 @@ class RecApplicationController {
                 return
             }
             
-            def service = getService4()
-            service.bulkDownloadDocuments(hm, request, response, hm.data)
+            recApplicationService_4.bulkDownloadDocuments(hm, request, response, hm.data)
             
             // If service set flag to false, render error
             if (!hm.flag) {
@@ -576,7 +569,7 @@ class RecApplicationController {
             }
             // Otherwise response was already streamed by service
         } catch (Exception e) {
-            render([flag: false, msg: "Error: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -592,7 +585,7 @@ class RecApplicationController {
      * }
      */
     def bulkApproveApplications() {
-        processRequestWithParams("bulkApproveApplications", getService4())
+        processRequestWithParams("bulkApproveApplications", recApplicationService_4)
     }
 
     /**
@@ -607,7 +600,7 @@ class RecApplicationController {
      * }
      */
     def bulkRejectApplications() {
-        processRequestWithParams("bulkRejectApplications", getService4())
+        processRequestWithParams("bulkRejectApplications", recApplicationService_4)
     }
 
     /**
@@ -632,8 +625,7 @@ class RecApplicationController {
                 return
             }
             
-            def service = getService4()
-            service.exportApplications(hm, request, response, hm.data)
+            recApplicationService_4.exportApplications(hm, request, response, hm.data)
             
             // If service set flag to false, render error
             if (!hm.flag) {
@@ -641,7 +633,7 @@ class RecApplicationController {
             }
             // Otherwise response was already streamed by service
         } catch (Exception e) {
-            render([flag: false, msg: "Error: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 }

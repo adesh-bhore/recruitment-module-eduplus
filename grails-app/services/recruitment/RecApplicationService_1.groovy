@@ -16,68 +16,61 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getActiveRecruitments
      */
     def getActiveRecruitments(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            
-            if (!uid) {
-                hm.msg = "User not found"
-                hm.flag = false
-                return
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not found"
+            hm.flag = false
+            return
+        }
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd")
+        Date todate = new Date()
+        
+        // Get all current versions
+        def recver = RecVersion.findAllByIscurrent(true)
+        def versionlist = []
+        
+        // Filter by date range
+        for (ver in recver) {
+            if (todate.before(ver?.to_date) && todate.after(ver?.from_date)) {
+                versionlist.add([
+                    id: ver.id,
+                    version_number: ver.version_number,
+                    version_date: sdf.format(ver.version_date),
+                    from_date: sdf.format(ver.from_date),
+                    to_date: sdf.format(ver.to_date),
+                    organization: [
+                        id: ver.organization.id,
+                        name: ver.organization.organization_name
+                    ]
+                ])
             }
-            
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd")
-            Date todate = new Date()
-            
-            // Get all current versions
-            def recver = RecVersion.findAllByIscurrent(true)
-            def versionlist = []
-            
-            // Filter by date range
-            for (ver in recver) {
-                if (todate.before(ver?.to_date) && todate.after(ver?.from_date)) {
-                    versionlist.add([
-                        id: ver.id,
+        }
+        
+        // Get applicant's submitted applications
+        def applicant = RecApplicant.findByEmail(uid.trim())
+        def submittedApplications = []
+        
+        if (applicant) {
+            for (ver in RecVersion.findAllByIscurrentforbackendprocessing(true)) {
+                def app = RecApplication.findByRecversionAndRecapplicantAndIsfeespaid(ver, applicant, true)
+                if (app != null) {
+                    submittedApplications.add([
+                        id: app.id,
+                        applicaitionid: app.applicaitionid,
+                        version_id: ver.id,
                         version_number: ver.version_number,
-                        version_date: sdf.format(ver.version_date),
-                        from_date: sdf.format(ver.from_date),
-                        to_date: sdf.format(ver.to_date),
-                        organization: [
-                            id: ver.organization.id,
-                            name: ver.organization.organization_name
-                        ]
+                        isfeespaid: app.isfeespaid
                     ])
                 }
             }
-            
-            // Get applicant's submitted applications
-            def applicant = RecApplicant.findByEmail(uid.trim())
-            def submittedApplications = []
-            
-            if (applicant) {
-                for (ver in RecVersion.findAllByIscurrentforbackendprocessing(true)) {
-                    def app = RecApplication.findByRecversionAndRecapplicantAndIsfeespaid(ver, applicant, true)
-                    if (app != null) {
-                        submittedApplications.add([
-                            id: app.id,
-                            applicaitionid: app.applicaitionid,
-                            version_id: ver.id,
-                            version_number: ver.version_number,
-                            isfeespaid: app.isfeespaid
-                        ])
-                    }
-                }
-            }
-            
-            hm.activeRecruitments = versionlist
-            hm.submittedApplications = submittedApplications
-            hm.msg = "Active recruitments fetched successfully"
-            hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getActiveRecruitments: ${e.message}")
-            hm.msg = "Error fetching active recruitments: ${e.message}"
-            hm.flag = false
         }
+        
+        hm.activeRecruitments = versionlist
+        hm.submittedApplications = submittedApplications
+        hm.msg = "Active recruitments fetched successfully"
+        hm.flag = true
     }
     
     /**
@@ -85,9 +78,8 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getApplicationFormData
      */
     def getApplicationFormData(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def recverId = hm.remove("recver")
+        def uid = hm.remove("uid")
+        def recverId = hm.remove("recver")
             
             if (!uid || !recverId) {
                 hm.msg = "User or recruitment version not found"
@@ -285,12 +277,6 @@ class RecApplicationService_1 {
             
             hm.msg = "Form data fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicationFormData: ${e.message}")
-            hm.msg = "Error fetching form data: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -298,9 +284,8 @@ class RecApplicationService_1 {
      * Used by: POST /recApplication/submitApplication
      */
     def submitApplication(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def recverId = data.recver
+        def uid = hm.remove("uid")
+        def recverId = data.recver
             
             if (!uid || !recverId) {
                 hm.msg = "User or recruitment version not found"
@@ -562,13 +547,6 @@ class RecApplicationService_1 {
             hm.applicaitionid = recapplication.applicaitionid
             hm.msg = "Application submitted successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in submitApplication: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error submitting application: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -576,8 +554,7 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getMyApplications
      */
     def getMyApplications(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
+        def uid = hm.remove("uid")
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -622,12 +599,6 @@ class RecApplicationService_1 {
             
             hm.msg = "Applications fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getMyApplications: ${e.message}")
-            hm.msg = "Error fetching applications: ${e.message}"
-            hm.flag = false
-        }
     }
 
     
@@ -636,9 +607,8 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getApplicationDetails/:id
      */
     def getApplicationDetails(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationId = hm.remove("applicationId")
+        def uid = hm.remove("uid")
+        def applicationId = hm.remove("applicationId")
             
             if (!uid || !applicationId) {
                 hm.msg = "User or application not found"
@@ -800,12 +770,6 @@ class RecApplicationService_1 {
             
             hm.msg = "Application details fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicationDetails: ${e.message}")
-            hm.msg = "Error fetching application details: ${e.message}"
-            hm.flag = false
-        }
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -817,8 +781,7 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getDocumentTypes
      */
     def getDocumentTypes(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
+        def uid = hm.remove("uid")
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -855,12 +818,6 @@ class RecApplicationService_1 {
             
             hm.msg = "Document types fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getDocumentTypes: ${e.message}")
-            hm.msg = "Error fetching document types: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -868,9 +825,8 @@ class RecApplicationService_1 {
      * Used by: POST /recApplication/uploadDocument
      */
     def uploadDocument(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def documentTypeId = data.documenttype
+        def uid = hm.remove("uid")
+        def documentTypeId = data.documenttype
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -993,13 +949,6 @@ class RecApplicationService_1 {
             hm.filename = file.originalFilename
             hm.msg = "Document uploaded successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in uploadDocument: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error uploading document: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1007,9 +956,8 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/downloadDocument
      */
     def downloadDocument(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def documentId = hm.remove("documentId")
+        def uid = hm.remove("uid")
+        def documentId = hm.remove("documentId")
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -1051,12 +999,6 @@ class RecApplicationService_1 {
             hm.extension = recdocument.recdocumenttype.extension
             hm.msg = "Document info fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in downloadDocument: ${e.message}")
-            hm.msg = "Error downloading document: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1064,9 +1006,8 @@ class RecApplicationService_1 {
      * Used by: POST /recApplication/deleteDocument
      */
     def deleteDocument(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def documentId = data.documentId
+        def uid = hm.remove("uid")
+        def documentId = data.documentId
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -1124,13 +1065,6 @@ class RecApplicationService_1 {
             
             hm.msg = "Document deleted successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in deleteDocument: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error deleting document: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1138,9 +1072,8 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getApplicantPhoto
      */
     def getApplicantPhoto(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicantId = hm.remove("applicantId")
+        def uid = hm.remove("uid")
+        def applicantId = hm.remove("applicantId")
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -1173,12 +1106,6 @@ class RecApplicationService_1 {
             hm.fullpath = recapplicant.photopath + recapplicant.photoname
             hm.msg = "Photo info fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicantPhoto: ${e.message}")
-            hm.msg = "Error fetching photo: ${e.message}"
-            hm.flag = false
-        }
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -1190,9 +1117,8 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/getApplicationPreview
      */
     def getApplicationPreview(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def applicationId = hm.remove("applicationId")
+        def uid = hm.remove("uid")
+        def applicationId = hm.remove("applicationId")
             
             if (!uid) {
                 hm.msg = "User not found"
@@ -1404,13 +1330,6 @@ class RecApplicationService_1 {
             
             hm.msg = "Application preview data fetched successfully"
             hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in getApplicationPreview: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error fetching application preview: ${e.message}"
-            hm.flag = false
-        }
     }
     
     /**
@@ -1418,75 +1337,67 @@ class RecApplicationService_1 {
      * Used by: GET /recApplication/downloadDocumentFile
      */
     def downloadDocumentFile(hm, request, data) {
-        try {
-            def uid = hm.remove("uid")
-            def documentId = hm.remove("documentId")
-            
-            if (!uid) {
-                hm.msg = "User not found"
-                hm.flag = false
-                return
-            }
-            
-            if (!documentId) {
-                hm.msg = "Document ID not provided"
-                hm.flag = false
-                return
-            }
-            
-            RecApplicant recapplicant = RecApplicant.findByEmail(uid)
-            if (!recapplicant) {
-                hm.msg = "Applicant not found"
-                hm.flag = false
-                return
-            }
-            
-            RecApplicantDocument recdocument = RecApplicantDocument.findById(documentId)
-            if (!recdocument) {
-                hm.msg = "Document not found"
-                hm.flag = false
-                return
-            }
-            
-            // Verify ownership
-            if (recdocument.recapplicant.id != recapplicant.id) {
-                hm.msg = "Unauthorized access"
-                hm.flag = false
-                return
-            }
-            
-            // Get presigned URL from AWS S3
-            AWSBucket awsBucket = AWSBucket.findByContent("documents")
-            AWSFolderPath awsFolderPath = AWSFolderPath.findById(5)
-            
-            if (!awsBucket || !awsFolderPath) {
-                hm.msg = "AWS configuration not found"
-                hm.flag = false
-                return
-            }
-            
-            def path = awsFolderPath.path + recdocument.filepath + recdocument.filename
-            AWSBucketService awsBucketService = new AWSBucketService()
-            def presignedUrl = awsBucketService.getPresignedUrl(awsBucket.bucketname, path, awsBucket.region)
-            
-            if (!presignedUrl) {
-                hm.msg = "Failed to generate download URL"
-                hm.flag = false
-                return
-            }
-            
-            // Return presigned URL for direct download
-            hm.downloadUrl = presignedUrl
-            hm.filename = recdocument.filename
-            hm.contentType = recdocument.filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
-            hm.msg = "Download URL generated successfully"
-            hm.flag = true
-            
-        } catch (Exception e) {
-            println("Error in downloadDocumentFile: ${e.message}")
-            e.printStackTrace()
-            hm.msg = "Error generating download URL: ${e.message}"
+        def uid = hm.remove("uid")
+        def documentId = hm.remove("documentId")
+        
+        if (!uid) {
+            hm.msg = "User not found"
             hm.flag = false
+            return
         }
+        
+        if (!documentId) {
+            hm.msg = "Document ID not provided"
+            hm.flag = false
+            return
+        }
+        
+        RecApplicant recapplicant = RecApplicant.findByEmail(uid)
+        if (!recapplicant) {
+            hm.msg = "Applicant not found"
+            hm.flag = false
+            return
+        }
+        
+        RecApplicantDocument recdocument = RecApplicantDocument.findById(documentId)
+        if (!recdocument) {
+            hm.msg = "Document not found"
+            hm.flag = false
+            return
+        }
+        
+        // Verify ownership
+        if (recdocument.recapplicant.id != recapplicant.id) {
+            hm.msg = "Unauthorized access"
+            hm.flag = false
+            return
+        }
+        
+        // Get presigned URL from AWS S3
+        AWSBucket awsBucket = AWSBucket.findByContent("documents")
+        AWSFolderPath awsFolderPath = AWSFolderPath.findById(5)
+        
+        if (!awsBucket || !awsFolderPath) {
+            hm.msg = "AWS configuration not found"
+            hm.flag = false
+            return
+        }
+        
+        def path = awsFolderPath.path + recdocument.filepath + recdocument.filename
+        AWSBucketService awsBucketService = new AWSBucketService()
+        def presignedUrl = awsBucketService.getPresignedUrl(awsBucket.bucketname, path, awsBucket.region)
+        
+        if (!presignedUrl) {
+            hm.msg = "Failed to generate download URL"
+            hm.flag = false
+            return
+        }
+        
+        // Return presigned URL for direct download
+        hm.downloadUrl = presignedUrl
+        hm.filename = recdocument.filename
+        hm.contentType = recdocument.filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+        hm.msg = "Download URL generated successfully"
+        hm.flag = true
     }
 }

@@ -4,7 +4,21 @@ import grails.converters.JSON
 
 class RecApplicationLoginController {
 
-    RecApplicationLoginService recApplicationLoginService
+    // Inject RecApplicationLoginService using Grails dependency injection
+    def recApplicationLoginService
+
+    /**
+     * Common exception handler
+     */
+    private def handleException(Exception e) {
+        println("Exception in RecApplicationLoginController: ${e.message}")
+        e.printStackTrace()
+        HashMap hashMap = new HashMap()
+        hashMap.put("error_msg", e.message)
+        hashMap.put("flag", false)
+        render hashMap as JSON
+        return
+    }
 
     /**
      * Phase 1: Login and Registration APIs
@@ -27,8 +41,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in processerplogin: ${e.message}", e)
-            render([flag: false, msg: "Error processing login: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -48,8 +61,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in sendotp: ${e.message}", e)
-            render([flag: false, msg: "Error sending OTP: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -72,8 +84,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in checkotp: ${e.message}", e)
-            render([flag: false, msg: "Error verifying OTP: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -93,8 +104,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in resendotp: ${e.message}", e)
-            render([flag: false, msg: "Error resending OTP: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -124,8 +134,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in savelogin: ${e.message}", e)
-            render([flag: false, msg: "Error completing registration: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -150,8 +159,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in sendotppasswordchange: ${e.message}", e)
-            render([flag: false, msg: "Error sending OTP: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -173,8 +181,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in checkotppasswordchange: ${e.message}", e)
-            render([flag: false, msg: "Error verifying OTP: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -194,8 +201,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in resendotppasswordchange: ${e.message}", e)
-            render([flag: false, msg: "Error resending OTP: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -225,8 +231,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in changePassword: ${e.message}", e)
-            render([flag: false, msg: "Error changing password: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 
@@ -260,8 +265,7 @@ class RecApplicationLoginController {
             render result as JSON
 
         } catch (Exception e) {
-            log.error("Error in savechangepassword: ${e.message}", e)
-            render([flag: false, msg: "Error changing password: ${e.message}"] as JSON)
+            handleException(e)
         }
     }
 }
