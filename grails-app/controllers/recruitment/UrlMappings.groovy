@@ -15,6 +15,7 @@ class UrlMappings {
         "/(?i:recExam)/$action?"(controller: "RecExam")
         "/(?i:recOnlineMcq)/$action?"(controller: "RecOnlineMcq")
         "/(?i:recEvaluationParameter)/$action?"(controller: "RecEvaluationParameter")
+        "/(?i:recExpert)/$action?"(controller: "RecExpert")
         
         // Test API endpoints
         "/(?i:hello)/$action?"(controller: "hello")
