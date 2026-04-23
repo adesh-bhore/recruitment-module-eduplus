@@ -1,27 +1,21 @@
 package recruitment
 
-class RecClass
+class RecCategory
 {
     String name
+    boolean isactive
     String username
     Date creation_date
     Date updation_date
     String creation_ip_address
     String updation_ip_address
-
-    Boolean isactive
-
     static constraints = {
-        isactive nullable: true
     }
-
-    static mapping={
-        isactive defaultValue: false
+    static mapping = {
+        isactive defaultValue: true
     }
-
-    String toString() {
+    String toString()
+    {
         name
     }
-
-    static belongsTo=[organization:Organization]
 }

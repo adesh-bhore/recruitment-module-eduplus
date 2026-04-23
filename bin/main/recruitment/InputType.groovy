@@ -1,27 +1,24 @@
 package recruitment
 
-class RecClass
-{
+class InputType {
+
     String name
-    String username
+    boolean isactive
+
+    String creation_username
+    String updation_username
     Date creation_date
     Date updation_date
     String creation_ip_address
     String updation_ip_address
 
-    Boolean isactive
+    static belongsTo=[ organization:Organization]
 
     static constraints = {
-        isactive nullable: true
+        name unique: ['organization']
     }
 
-    static mapping={
+    static mapping = {
         isactive defaultValue: false
     }
-
-    String toString() {
-        name
-    }
-
-    static belongsTo=[organization:Organization]
 }

@@ -9,14 +9,12 @@ class RecClass
     String creation_ip_address
     String updation_ip_address
 
-    Boolean isactive
+    boolean isactive
 
-    static constraints = {
-        isactive nullable: true
-    }
+    static constraints = { }
 
     static mapping={
-        isactive defaultValue: false
+        isactive defaultValue:false
     }
 
     String toString() {
