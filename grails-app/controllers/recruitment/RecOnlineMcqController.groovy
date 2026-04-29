@@ -62,10 +62,12 @@ class RecOnlineMcqController {
             HashMap hm = new HashMap()
             hm.put("uid", uid)
             
-            // Extract params
+            // Extract params — skip file entries (MultipartFile) to avoid JSON serialization errors
             params.each { key, value ->
                 if (key != 'controller' && key != 'action') {
-                    hm.put(key, value)
+                    if (value instanceof String || value instanceof Number || value instanceof Boolean) {
+                        hm.put(key, value)
+                    }
                 }
             }
             

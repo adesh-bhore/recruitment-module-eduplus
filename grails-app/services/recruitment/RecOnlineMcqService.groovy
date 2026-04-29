@@ -65,8 +65,10 @@ class RecOnlineMcqService {
         def uid = hm.remove("uid")
         def courseId = hm.remove("courseId")
         def groupNo = hm.remove("groupNo")
-        def page = hm.remove("page") ? hm.remove("page").toInteger() : 1
-        def pageSize = hm.remove("pageSize") ? hm.remove("pageSize").toInteger() : 50
+        def pageRaw = hm.remove("page")
+        def pageSizeRaw = hm.remove("pageSize")
+        def page = pageRaw ? pageRaw.toInteger() : 1
+        def pageSize = pageSizeRaw ? pageSizeRaw.toInteger() : 50
         
         if (!uid) {
             hm.msg = "User not authenticated"
@@ -319,17 +321,17 @@ class RecOnlineMcqService {
         question.recdeptgroup = recdeptgroup
         question.erpmcqexamname = ename
         
-        // Handle question file upload
+        // Handle question file upload with try-catch
+        try {
         AWSUploadDocumentsService awsUploadDocumentsService = new AWSUploadDocumentsService()
         AWSFolderPath afp = AWSFolderPath.findById(5)
         
         def qfile = request.getFile('qfile')
-        if (qfile && !qfile.empty) {
+            if (qfile && !qfile.empty && afp) {
             Part filePart = request.getPart("qfile")
             String path = "recruitment/questionimage/" + course.id + "/"
             String awsfp = afp.path + path
             String existsFilePath = ""
-            existsFilePath = awsfp + path + qfile.originalFilename
             boolean isUploaded = awsUploadDocumentsService.uploadDocument(filePart, awsfp, qfile.originalFilename, existsFilePath)
             
             if (isUploaded) {
@@ -340,6 +342,11 @@ class RecOnlineMcqService {
                 question.question_file_name = null
             }
         } else {
+            question.question_file_path = null
+            question.question_file_name = null
+        }
+        } catch (Exception e) {
+            println("AWS upload error for question file: ${e.message}")
             question.question_file_path = null
             question.question_file_name = null
         }
@@ -360,14 +367,17 @@ class RecOnlineMcqService {
             option.option_statement = optionStatement
             option.iscorrecetoption = isCorrect
             
-            // Handle option file upload
+            // Handle option file upload with try-catch
+            try {
+                AWSUploadDocumentsService awsUploadDocumentsService = new AWSUploadDocumentsService()
+                AWSFolderPath afp = AWSFolderPath.findById(5)
+                
             def opfile = request.getFile("file${i}")
-            if (opfile && !opfile.empty) {
+                if (opfile && !opfile.empty && afp) {
                 Part filePart = request.getPart("file${i}")
                 String path = "recruitment/questionimage/" + course.id + "/"
                 String awsfp = afp.path + path
                 String existsFilePath = ""
-                existsFilePath = awsfp + path + opfile.originalFilename
                 boolean isUploaded = awsUploadDocumentsService.uploadDocument(filePart, awsfp, opfile.originalFilename, existsFilePath)
                 
                 if (isUploaded) {
@@ -381,7 +391,11 @@ class RecOnlineMcqService {
                 option.option_file_name = null
                 option.option_file_path = null
             }
-            
+            } catch (Exception e) {
+                println("AWS upload error for option ${i}: ${e.message}")
+                option.option_file_name = null
+                option.option_file_path = null
+            }
             option.username = uid
             option.creation_date = new Date()
             option.updation_date = new Date()
