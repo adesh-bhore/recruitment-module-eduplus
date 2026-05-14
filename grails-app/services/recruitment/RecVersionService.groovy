@@ -18,6 +18,7 @@ class RecVersionService {
         return
     }
 
+    // OLD METHOD: statisticsreportfilter (from RecVersionController)
     /**
      * Get filter data for statistics report
      * Returns: academic years, organizations (if management), current academic year, rec versions
@@ -152,6 +153,7 @@ class RecVersionService {
             hm.flag = true
     }
 
+    // OLD METHOD: getRecVersionDetails (from RecVersionController)
     /**
      * Get recruitment versions by academic year and organization
      * Returns: List of recruitment versions for the selected academic year and organization
@@ -231,6 +233,7 @@ class RecVersionService {
             hm.flag = true
     }
 
+    // OLD METHOD: statisticssummaryreport (from RecVersionController)
     /**
      * Get statistics summary report
      * Returns: Matrix of applications by branch and post with totals
@@ -461,6 +464,7 @@ class RecVersionService {
             hm.flag = true
     }
 
+    // OLD METHOD: gettotalpostcounts (from RecVersionController)
     /**
      * Get total post counts (distinct or all)
      * Returns: Count of applications for a specific post
@@ -602,6 +606,7 @@ class RecVersionService {
             hm.flag = true
     }
 
+    // OLD METHOD: gettotaldeptcounts (from RecVersionController)
     /**
      * Get total department/branch counts (distinct or all)
      * Returns: Count of applications for a specific branch

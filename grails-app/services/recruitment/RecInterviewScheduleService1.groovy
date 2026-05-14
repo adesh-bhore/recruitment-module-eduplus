@@ -7,6 +7,7 @@ import common.AWSBucketService
 @Transactional
 class RecInterviewScheduleServiceOne {
 
+    // OLD METHOD: getinterviewschedule (from RecInterviewScheduleDetailsController)
     /**
      * Get interview schedules with filter data
      * Returns: Interview schedules, academic years, organizations, versions, departments, posts
@@ -216,6 +217,7 @@ class RecInterviewScheduleServiceOne {
         return departmentlist
     }
 
+    // OLD METHOD: getRecVersion (from RecInterviewScheduleDetailsController)
     /**
      * Get recruitment versions by organization and academic year
      */
@@ -273,6 +275,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: getDept (from RecInterviewScheduleDetailsController)
     /**
      * Get departments by organization and recruitment version
      */
@@ -323,6 +326,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: getPost (from RecInterviewScheduleDetailsController)
     /**
      * Get posts by organization and recruitment version
      */
@@ -395,6 +399,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: getInterviewList (from RecInterviewScheduleDetailsController)
     /**
      * Get interview list by organization and recruitment version
      */
@@ -469,6 +474,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: saveinterviewschedule (from RecInterviewScheduleDetailsController)
     /**
      * Save new interview schedule
      */
@@ -594,6 +600,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: editinterviewschedule (from RecInterviewScheduleDetailsController)
     /**
      * Update existing interview schedule
      */
@@ -669,6 +676,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: deletesched (from RecInterviewScheduleDetailsController)
     /**
      * Delete interview schedule
      */
@@ -707,6 +715,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: sendmail (from RecInterviewScheduleDetailsController)
     /**
      * Send interview call letters via email
      * Sends emails to all candidates called for interview who haven't received mail yet
@@ -842,6 +851,7 @@ class RecInterviewScheduleServiceOne {
         hm.flag = true
     }
 
+    // OLD METHOD: preview_callletter (from RecInterviewScheduleDetailsController)
     /**
      * Preview interview call letters
      * Returns list of candidates with their interview details for preview

@@ -12,6 +12,7 @@ class RecOnlineMcqService {
     // Phase 1: Question Bank Management APIs (Admin)
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: showCourses (from RecOnlineMcqController)
     /**
      * Get instructor's courses list
      * Used by: GET /recOnlineMcq/getCourses
@@ -57,6 +58,7 @@ class RecOnlineMcqService {
         hm.flag = true
     }
     
+    // OLD METHOD: createQuestionBank (from RecOnlineMcqController)
     /**
      * Get all questions for a course with pagination
      * Used by: GET /recOnlineMcq/getQuestionBank
@@ -193,6 +195,7 @@ class RecOnlineMcqService {
         hm.flag = true
     }
     
+    // OLD METHOD: storeQuestionInQuestionBank (from RecOnlineMcqController)
     /**
      * Create new MCQ question with options
      * Used by: POST /recOnlineMcq/createQuestion
@@ -411,6 +414,7 @@ class RecOnlineMcqService {
         hm.flag = true
     }
     
+    // OLD METHOD: storeEditQuestionInQuestionBank (from RecOnlineMcqController)
     /**
      * Update existing question with options
      * Used by: PUT /recOnlineMcq/updateQuestion/:id
@@ -626,6 +630,7 @@ class RecOnlineMcqService {
         hm.flag = true
     }
     
+    // OLD METHOD: updateIsapprovemcqQuestion (from RecOnlineMcqController)
     /**
      * Toggle question approval status
      * Used by: PATCH /recOnlineMcq/toggleApproval/:id
@@ -693,6 +698,7 @@ class RecOnlineMcqService {
     // Phase 2: Question Details and File Management APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: editQuestion (from RecOnlineMcqController)
     /**
      * Get full question details with all options for editing
      * Used by: GET /recOnlineMcq/getQuestionDetails

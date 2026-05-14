@@ -22,6 +22,7 @@ class RecApplicationService_3 {
     // Phase 6: Qualification & Experience Management APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: getqualificationdetails (from RecApplicationController)
     /**
      * Get qualification details for an applicant
      * Used by: GET /recApplication/getQualificationDetails
@@ -102,6 +103,7 @@ class RecApplicationService_3 {
         hm.flag = true
     }
     
+    // OLD METHOD: editQualification (from RecApplicationController)
     /**
      * Update qualification details
      * Used by: POST /recApplication/updateQualification
@@ -187,6 +189,7 @@ class RecApplicationService_3 {
         hm.qualificationId = qualification.id
     }
     
+    // OLD METHOD: deleteQualification (from RecApplicationController)
     /**
      * Delete qualification
      * Used by: POST /recApplication/deleteQualification
@@ -225,6 +228,7 @@ class RecApplicationService_3 {
         hm.applicantId = applicantId
     }
     
+    // OLD METHOD: getExp (from RecApplicationController)
     /**
      * Get experience details for an applicant
      * Used by: GET /recApplication/getExperienceDetails

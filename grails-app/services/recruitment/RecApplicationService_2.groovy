@@ -10,6 +10,7 @@ class RecApplicationService_2 {
     // Phase 4: Admin - Application Listing & Filtering APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: recauthorityselection (from RecApplicationController)
     /**
      * Get authority applications - detect user's authority roles
      * Used by: GET /recApplication/getAuthorityApplications
@@ -109,6 +110,7 @@ class RecApplicationService_2 {
             hm.flag = true
     }
     
+    // OLD METHOD: recApplicationSummary (from RecApplicationController)
     /**
      * Get application summary with filters
      * Used by: GET /recApplication/getApplicationSummary
@@ -297,6 +299,7 @@ class RecApplicationService_2 {
         ]
     }
     
+    // OLD METHOD: recappdata (from RecApplicationController)
     /**
      * Get detailed application list with complete information
      * Used by: GET /recApplication/getDetailedApplicationList
@@ -499,6 +502,7 @@ class RecApplicationService_2 {
             hm.flag = true
     }
     
+    // OLD METHOD: recApplicationSummaryCount (from RecApplicationController)
     /**
      * Get application counts and statistics
      * Used by: GET /recApplication/getApplicationCounts
@@ -688,6 +692,7 @@ class RecApplicationService_2 {
             println("=== getApplicationCounts END ===")
     }
     
+    // OLD METHOD: recappdata (from RecApplicationController)
     /**
      * Get application data for specific application
      * Used by: GET /recApplication/getApplicationData
@@ -861,6 +866,7 @@ class RecApplicationService_2 {
             hm.flag = true
     }
     
+    // OLD METHOD: getRecapplicants (from RecApplicationController)
     /**
      * Get applicants list with filtering
      * Used by: GET /recApplication/getApplicantsList
@@ -953,6 +959,7 @@ class RecApplicationService_2 {
     // Phase 5: Admin - Application Approval & Shortlisting APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: saverecapplicationshortlist (from RecApplicationController)
     /**
      * Process application (approve/reject/shortlist)
      * Used by: POST /recApplication/processApplication
@@ -1051,6 +1058,7 @@ class RecApplicationService_2 {
             hm.status = statusName
     }
     
+    // OLD METHOD: notifyshortlistcandidateinput (from RecApplicationController)
     /**
      * Notify shortlisted candidates
      * Used by: POST /recApplication/notifyShortlistedCandidates
@@ -1119,6 +1127,7 @@ class RecApplicationService_2 {
             hm.flag = true
     }
     
+    // OLD METHOD: rejectaaplication (from RecApplicationController)
     /**
      * Reject application with reason
      * Used by: POST /recApplication/rejectApplication
@@ -1187,6 +1196,7 @@ class RecApplicationService_2 {
             hm.applicationId = recapplication.id
     }
     
+    // OLD METHOD: recapplicantattendance (from RecApplicationController)
     /**
      * Mark applicant attendance for interview
      * Used by: POST /recApplication/markAttendance

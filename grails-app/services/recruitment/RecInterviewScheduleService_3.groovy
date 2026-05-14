@@ -8,6 +8,7 @@ import common.AWSBucketService
 class RecInterviewScheduleService_3 {
     // ── Document Type Management Service Methods ─────────────────────
 
+    // OLD METHOD: addRecDocumentType (from RecInterviewScheduleDetailsController)
     /**
     * Get all RecDocumentType
     * Used by: GET /recInterviewSchedule/getRecDocumentTypeList
@@ -41,6 +42,7 @@ class RecInterviewScheduleService_3 {
         hm.flag = true
     }
 
+    // OLD METHOD: saveRecDocumentType (from RecInterviewScheduleDetailsController)
     /**
     * Create a new RecDocumentType (duplicate check by type)
     * Used by: POST /recInterviewSchedule/saveRecDocumentType
@@ -100,6 +102,7 @@ class RecInterviewScheduleService_3 {
         hm.flag = true
     }
 
+    // OLD METHOD: editRecDocumentType (from RecInterviewScheduleDetailsController)
     /**
     * Update an existing RecDocumentType
     * Used by: POST /recInterviewSchedule/editRecDocumentType
@@ -151,6 +154,7 @@ class RecInterviewScheduleService_3 {
         hm.flag = true
     }
 
+    // OLD METHOD: deleteRecDocumentType (from RecInterviewScheduleDetailsController)
     /**
     * Delete a RecDocumentType (fails gracefully if in use by FK constraint)
     * Used by: POST /recInterviewSchedule/deleteRecDocumentType
@@ -222,6 +226,7 @@ class RecInterviewScheduleService_3 {
 
     // ── Document Viewing Service Methods ─────────────────────────────
 
+    // OLD METHOD: recdocumentList (from RecInterviewScheduleDetailsController)
     /**
      * Get list of applications with documents for current recruitment versions
      * Used by: GET /recInterviewSchedule/recdocumentList
@@ -277,6 +282,7 @@ class RecInterviewScheduleService_3 {
         hm.flag = true
     }
 
+    // OLD METHOD: getdoc (from RecInterviewScheduleDetailsController)
     /**
      * Get documents for a specific applicant with presigned URLs
      * Used by: POST /recInterviewSchedule/getdoc

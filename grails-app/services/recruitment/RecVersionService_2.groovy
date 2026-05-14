@@ -18,6 +18,7 @@ class RecVersionService_2 {
         }
     }
 
+    // OLD METHOD: getcandidatelist (from RecVersionController)
     /**
      * Get candidate list with filtering by branch and/or post
      * Returns: List of applications with candidate details, addresses, and document counts
@@ -375,6 +376,7 @@ class RecVersionService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: downloadSelecteddocuments (from RecVersionController)
     /**
      * Download selected documents as ZIP file
      * Returns: ZIP file stream with all documents from selected applications

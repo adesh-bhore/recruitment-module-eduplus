@@ -11,6 +11,7 @@ import java.time.Period
 @Transactional
 class RecApplicationService_1 {
     
+    // OLD METHOD: selectorg (from RecApplicationController)
     /**
      * Get active recruitment versions (within date range)
      * Used by: GET /recApplication/getActiveRecruitments
@@ -73,6 +74,7 @@ class RecApplicationService_1 {
         hm.flag = true
     }
     
+    // OLD METHOD: recappform (from RecApplicationController)
     /**
      * Get all form data needed for application submission
      * Used by: GET /recApplication/getApplicationFormData
@@ -279,6 +281,7 @@ class RecApplicationService_1 {
             hm.flag = true
     }
     
+    // OLD METHOD: saveapplication (from RecApplicationController)
     /**
      * Submit or update application
      * Used by: POST /recApplication/submitApplication
@@ -549,6 +552,7 @@ class RecApplicationService_1 {
             hm.flag = true
     }
     
+    // OLD METHOD: N/A - New method
     /**
      * Get all applications for logged-in applicant
      * Used by: GET /recApplication/getMyApplications
@@ -602,6 +606,7 @@ class RecApplicationService_1 {
     }
 
     
+    // OLD METHOD: N/A - New method
     /**
      * Get detailed application information
      * Used by: GET /recApplication/getApplicationDetails/:id
@@ -776,6 +781,7 @@ class RecApplicationService_1 {
     // Phase 2: Document Management APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: N/A - New method
     /**
      * Get document types required for application
      * Used by: GET /recApplication/getDocumentTypes
@@ -820,6 +826,7 @@ class RecApplicationService_1 {
             hm.flag = true
     }
     
+    // OLD METHOD: savefileupload (from RecApplicationController)
     /**
      * Upload document to AWS S3
      * Used by: POST /recApplication/uploadDocument
@@ -951,6 +958,7 @@ class RecApplicationService_1 {
             hm.flag = true
     }
     
+    // OLD METHOD: downloaddocument (from RecApplicationController)
     /**
      * Download document from AWS S3
      * Used by: GET /recApplication/downloadDocument
@@ -1001,6 +1009,7 @@ class RecApplicationService_1 {
             hm.flag = true
     }
     
+    // OLD METHOD: deletedocument (from RecApplicationController)
     /**
      * Delete document from AWS S3
      * Used by: POST /recApplication/deleteDocument
@@ -1067,6 +1076,7 @@ class RecApplicationService_1 {
             hm.flag = true
     }
     
+    // OLD METHOD: renderimage (from RecApplicationController)
     /**
      * Get applicant photo
      * Used by: GET /recApplication/getApplicantPhoto
@@ -1112,6 +1122,7 @@ class RecApplicationService_1 {
     // Phase 3: Application Preview & PDF Data APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: applicationform (from RecApplicationController)
     /**
      * Get application preview data (for PDF generation or display)
      * Used by: GET /recApplication/getApplicationPreview

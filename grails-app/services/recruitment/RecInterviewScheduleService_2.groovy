@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat
 class RecInterviewScheduleService_2 {
     // ── Branch Service Methods ───────────────────────────────────────
 
+    // OLD METHOD: addRecBranch (from RecInterviewScheduleDetailsController)
     /**
      * Get all RecBranch for org + programs + current rec versions
      * Used by: GET /recInterviewSchedule/getRecBranchList
@@ -48,6 +49,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: saverecBranch (from RecInterviewScheduleDetailsController)
     /**
      * Create a new RecBranch (duplicate check by name + org + version + program)
      * Used by: POST /recInterviewSchedule/saverecBranch
@@ -109,6 +111,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: editRecBranch (from RecInterviewScheduleDetailsController)
     /**
      * Update an existing RecBranch
      * Used by: POST /recInterviewSchedule/editRecBranch
@@ -156,6 +159,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: deleterecBranch (from RecInterviewScheduleDetailsController)
     /**
      * Delete a RecBranch (fails gracefully if in use by FK constraint)
      * Used by: POST /recInterviewSchedule/deleterecBranch
@@ -228,6 +232,7 @@ class RecInterviewScheduleService_2 {
 
     // ── Post Management Service Methods ──────────────────────────────
 
+    // OLD METHOD: addRecPost (from RecInterviewScheduleDetailsController)
     /**
      * Get all RecPost for org + designations + current rec versions
      * Used by: GET /recInterviewSchedule/getRecPostList
@@ -274,6 +279,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: saverecPost (from RecInterviewScheduleDetailsController)
     /**
      * Create a new RecPost (duplicate check by org + version + designation)
      * Used by: POST /recInterviewSchedule/saverecPost
@@ -331,6 +337,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: editRecPost (from RecInterviewScheduleDetailsController)
     /**
      * Update an existing RecPost
      * Used by: POST /recInterviewSchedule/editRecPost
@@ -374,6 +381,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: deleterecPost (from RecInterviewScheduleDetailsController)
     /**
      * Delete a RecPost (fails gracefully if in use by FK constraint)
      * Used by: POST /recInterviewSchedule/deleterecPost
@@ -446,6 +454,7 @@ class RecInterviewScheduleService_2 {
 
     // ── Post Assignment Service Methods ──────────────────────────────
 
+    // OLD METHOD: assignPost (from RecInterviewScheduleDetailsController)
     /**
      * Get all ERPFacultyPost and Instructors for post assignment
      * Used by: GET /recInterviewSchedule/getAssignPostList
@@ -505,6 +514,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: saveassignPost (from RecInterviewScheduleDetailsController)
     /**
      * Assign ERPFacultyPost to Instructor (many-to-many)
      * Used by: POST /recInterviewSchedule/saveassignPost
@@ -561,6 +571,7 @@ class RecInterviewScheduleService_2 {
         hm.flag = true
     }
 
+    // OLD METHOD: deleteassignPost (from RecInterviewScheduleDetailsController)
     /**
      * Remove ERPFacultyPost assignment from Instructor
      * Used by: POST /recInterviewSchedule/deleteassignPost

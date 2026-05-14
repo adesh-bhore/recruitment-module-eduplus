@@ -9,6 +9,7 @@ class RecEvaluationParameterService {
     // Phase 1: Evaluation Parameter Management APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: parameterinput (from RecEvaluationParameterController)
     /**
      * Get initial data for parameter input form
      * Used by: GET /recEvaluationParameter/getInitialData
@@ -155,6 +156,7 @@ class RecEvaluationParameterService {
         hm.flag = true
     }
     
+    // OLD METHOD: getRecVersion (from RecEvaluationParameterController)
     /**
      * Get recruitment versions for organization and academic year
      * Used by: GET /recEvaluationParameter/getRecVersions
@@ -206,6 +208,7 @@ class RecEvaluationParameterService {
         hm.flag = true
     }
     
+    // OLD METHOD: getRecExpertGroup (from RecEvaluationParameterController)
     /**
      * Get expert groups for organization and recruitment version
      * Used by: GET /recEvaluationParameter/getExpertGroups
@@ -273,6 +276,7 @@ class RecEvaluationParameterService {
         hm.flag = true
     }
     
+    // OLD METHOD: getParameterlist (from RecEvaluationParameterController)
     /**
      * Get evaluation parameters list for organization and recruitment version
      * Used by: GET /recEvaluationParameter/getParameters
@@ -331,6 +335,7 @@ class RecEvaluationParameterService {
         hm.flag = true
     }
     
+    // OLD METHOD: saveevaluationparameter (from RecEvaluationParameterController)
     /**
      * Create or update evaluation parameter
      * Used by: POST /recEvaluationParameter/saveParameter
@@ -483,6 +488,7 @@ class RecEvaluationParameterService {
         hm.flag = true
     }
     
+    // OLD METHOD: deleteevaluationparameter (from RecEvaluationParameterController)
     /**
      * Delete evaluation parameter
      * Used by: DELETE /recEvaluationParameter/deleteParameter/:id

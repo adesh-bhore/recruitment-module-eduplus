@@ -24,6 +24,7 @@ class RecApplicationService_4 {
     // Phase 7: Bulk Operations & Reports APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: downloaddocumentBulkzipRecApplicant (from RecApplicationController)
     /**
      * Bulk download applicant documents as ZIP
      * Used by: POST /recApplication/bulkDownloadDocuments
@@ -156,6 +157,7 @@ class RecApplicationService_4 {
         // Response is already sent to client
     }
     
+    // OLD METHOD: N/A - New method
     /**
      * Bulk approve applications
      * Used by: POST /recApplication/bulkApproveApplications
@@ -268,6 +270,7 @@ class RecApplicationService_4 {
         hm.flag = true
     }
     
+    // OLD METHOD: N/A - New method
     /**
      * Bulk reject applications
      * Used by: POST /recApplication/bulkRejectApplications
@@ -367,6 +370,7 @@ class RecApplicationService_4 {
         hm.flag = true
     }
     
+    // OLD METHOD: N/A - New method
     /**
      * Export applications to Excel/CSV
      * Used by: GET /recApplication/exportApplications

@@ -9,6 +9,7 @@ class RecExpertService {
     // Phase 1: Expert CRUD APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: recexpertinput1 (from RecExpertController)
     /**
      * Get initial data for expert management form
      * Used by: GET /recExpert/getInitialData
@@ -199,6 +200,7 @@ class RecExpertService {
         hm.flag = true
     }
     
+    // OLD METHOD: getfilters (from RecExpertController)
     /**
      * Get filtered data based on organization
      * Used by: GET /recExpert/getFilters
@@ -356,6 +358,7 @@ class RecExpertService {
         hm.flag = true
     }
     
+    // OLD METHOD: saverecexpert (from RecExpertController)
     /**
      * Create new expert
      * Used by: POST /recExpert/saveExpert
@@ -461,6 +464,7 @@ class RecExpertService {
         hm.flag = true
     }
     
+    // OLD METHOD: deleteexpert (from RecExpertController)
     /**
      * Delete expert
      * Used by: DELETE /recExpert/deleteExpert/:id
@@ -585,6 +589,7 @@ class RecExpertService {
     // Phase 2: Expert Authentication APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: recexpertlogin (from RecExpertController)
     /**
      * Authenticate expert
      * Used by: POST /recExpert/login

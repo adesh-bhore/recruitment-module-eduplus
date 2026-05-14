@@ -12,6 +12,7 @@ class RecApplicationLoginService {
      * Phase 1: Login and Registration APIs
      */
 
+    // OLD METHOD: processerplogin (from RecApplicationLoginController)
     /**
      * API 1: Login - Authenticate user with email and password
      * @param username - User email
@@ -65,6 +66,7 @@ class RecApplicationLoginService {
         return result
     }
 
+    // OLD METHOD: sendotp (from RecApplicationLoginController)
     /**
      * API 2: Send OTP - Generate and send OTP for registration
      * @param username - User email
@@ -115,6 +117,7 @@ class RecApplicationLoginService {
         ]
     }
 
+    // OLD METHOD: checkotp (from RecApplicationLoginController)
     /**
      * API 3: Verify OTP - Check if OTP is valid
      * @param email - User email
@@ -155,6 +158,7 @@ class RecApplicationLoginService {
         ]
     }
 
+    // OLD METHOD: resendotp (from RecApplicationLoginController)
     /**
      * API 4: Resend OTP - Resend OTP for registration
      * @param email - User email
@@ -198,6 +202,7 @@ class RecApplicationLoginService {
         ]
     }
 
+    // OLD METHOD: savelogin (from RecApplicationLoginController)
     /**
      * API 5: Complete Registration - Save user credentials after OTP verification
      * @param username - User email
@@ -313,6 +318,7 @@ class RecApplicationLoginService {
      * Phase 2: Password Reset APIs
      */
 
+    // OLD METHOD: sendotppasswordchange (from RecApplicationLoginController)
     /**
      * API 6: Send OTP for Password Reset
      * @param email - User email
@@ -363,6 +369,7 @@ class RecApplicationLoginService {
         ]
     }
 
+    // OLD METHOD: checkotppasswordchange (from RecApplicationLoginController)
     /**
      * API 7: Verify OTP for Password Reset
      * @param email - User email
@@ -403,6 +410,7 @@ class RecApplicationLoginService {
         ]
     }
 
+    // OLD METHOD: resendotppasswordchange (from RecApplicationLoginController)
     /**
      * API 8: Resend OTP for Password Reset
      * @param email - User email
@@ -452,6 +460,7 @@ class RecApplicationLoginService {
         ]
     }
 
+    // OLD METHOD: changePassword (from RecApplicationLoginController)
     /**
      * API 9: Reset Password (After OTP Verification)
      * @param username - User email
@@ -512,6 +521,7 @@ class RecApplicationLoginService {
      * Phase 3: Change Password for Logged-in User
      */
 
+    // OLD METHOD: savechangepassword (from RecApplicationLoginController)
     /**
      * API 10: Change Password (For Logged-in User)
      * @param username - User email (from session)

@@ -9,6 +9,7 @@ class RecExpertService2 {
     // Phase 3: Marks Evaluation APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: add_rec_applicant_marks (from RecExpertController)
     /**
      * Get applicants list assigned to expert for marks evaluation
      * Used by: GET /recExpert/getApplicantsForMarks
@@ -135,6 +136,7 @@ class RecExpertService2 {
         hm.flag = true
     }
     
+    // OLD METHOD: rec_apllication_table (from RecExpertController)
     /**
      * Get evaluation form for specific applicant
      * Used by: GET /recExpert/getEvaluationForm
@@ -229,6 +231,7 @@ class RecExpertService2 {
         hm.flag = true
     }
     
+    // OLD METHOD: add_rec_applicants_marks_details (from RecExpertController)
     /**
      * Submit marks for applicant
      * Used by: POST /recExpert/submitMarks
@@ -430,6 +433,7 @@ class RecExpertService2 {
     // Phase 4: Dashboard & Reports APIs
     // ═══════════════════════════════════════════════════════════════
     
+    // OLD METHOD: rec_application_dashboard (from RecExpertController)
     /**
      * Get expert groups dashboard for instructors
      * Used by: GET /recExpert/getExpertGroupsDashboard
@@ -492,6 +496,7 @@ class RecExpertService2 {
         hm.flag = true
     }
     
+    // OLD METHOD: getApplicantMarks (from RecExpertController)
     /**
      * Get applicant marks report for specific expert group
      * Used by: GET /recExpert/getApplicantMarksReport

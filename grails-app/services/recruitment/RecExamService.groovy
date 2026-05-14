@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 @Transactional
 class RecExamService {
 
+    // OLD METHOD: generatesecretcode (from RecExamController)
     /**
      * Generate secret codes for shortlisted candidates
      * Used by: POST /recExam/generateSecretCodes
@@ -167,6 +168,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: fetchexamapplicantdata (from RecExamController)
     /**
      * Get exam applicant data
      * Used by: GET /recExam/getExamApplicants
@@ -267,6 +269,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: quesallocation (from RecExamController)
     /**
      * Allocate questions to applicants based on weightage
      * Used by: POST /recExam/allocateQuestions
@@ -434,6 +437,7 @@ class RecExamService {
     // PHASE 2: Scheduling & Control
     // =====================================================
     
+    // OLD METHOD: schedule (from RecExamController)
     /**
      * Get all department groups for scheduling
      * Used by: GET /recExam/getGroups
@@ -496,6 +500,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: setschedule (from RecExamController)
     /**
      * Get exam schedule for a specific group
      * Used by: GET /recExam/getSchedule
@@ -596,6 +601,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: addeditschedule (from RecExamController)
     /**
      * Set schedule for individual candidate
      * Used by: POST /recExam/setSchedule
@@ -657,6 +663,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: setscheduleforall (from RecExamController)
     /**
      * Set schedule for all candidates in a group
      * Used by: POST /recExam/setScheduleForAll
@@ -754,6 +761,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: extendtime (from RecExamController)
     /**
      * Extend exam time for a candidate
      * Used by: POST /recExam/extendTime

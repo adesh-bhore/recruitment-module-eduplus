@@ -5,6 +5,10 @@ import grails.gorm.transactions.Transactional
 @Transactional
 class RecExpertService3 {
     
+    // NOTE: This service contains NEW FUNCTIONALITY for managing RecDeptExpertGroup and RecExpertType
+    // These features did not exist in the old RecExpertController
+    // All methods in this service are new implementations for the REST API architecture
+    
     // ═══════════════════════════════════════════════════════════════
     // Phase 5A: RecDeptExpertGroup Management APIs
     // ═══════════════════════════════════════════════════════════════
