@@ -1219,6 +1219,7 @@ class RecExamService {
     // PHASE 4: Results & Selection
     // =====================================================
     
+    // OLD METHOD: selectgrp (from RecExamController)
     /**
      * Get all expert groups for result viewing
      * Used by: GET /recExam/getExpertGroups
@@ -1299,6 +1300,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: expertgrpwise (from RecExamController)
     /**
      * Get results by expert group (sorted by score)
      * Used by: GET /recExam/getResultsByGroup
@@ -1424,6 +1426,7 @@ class RecExamService {
             hm.flag = true
     }
     
+    // OLD METHOD: saveselectedapp (from RecExamController)
     /**
      * Save selected applications based on cutoff
      * Used by: POST /recExam/saveSelectedApplications

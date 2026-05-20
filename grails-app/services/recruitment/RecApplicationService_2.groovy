@@ -489,8 +489,8 @@ class RecApplicationService_2 {
                     branches: reca.recbranch?.collect { b -> [id: b.id, name: b.name] },
                     academics: academicsList,
                     experience: [
-                        teaching: teachingexp ? [years: teachingexp.years, months: teachingexp.months] : null,
-                        industry: industryexp ? [years: industryexp.years, months: industryexp.months] : null
+                        teaching: teachingexp ? [years: teachingexp.no_of_years, months: teachingexp.no_of_months] : null,
+                        industry: industryexp ? [years: industryexp.no_of_years, months: industryexp.no_of_months] : null
                     ],
                     documents: documentsList,
                     approvalStatus: approvalStatusList
@@ -834,9 +834,9 @@ class RecApplicationService_2 {
             RecExperience industryexp = RecExperience.findByRecexperiencetypeAndRecapplicant(industryexptype, recapp.recapplicant)
             RecExperience nonteachingexp = RecExperience.findByRecexperiencetypeAndRecapplicant(nonteachingexptype, recapp.recapplicant)
             
-            hm.teachingExperience = teachingexp ? [years: teachingexp.years, months: teachingexp.months] : null
-            hm.industryExperience = industryexp ? [years: industryexp.years, months: industryexp.months] : null
-            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.years, months: nonteachingexp.months] : null
+            hm.teachingExperience = teachingexp ? [years: teachingexp.no_of_years, months: teachingexp.no_of_months] : null
+            hm.industryExperience = industryexp ? [years: industryexp.no_of_years, months: industryexp.no_of_months] : null
+            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.no_of_years, months: nonteachingexp.no_of_months] : null
             
             // Documents
             def docs = RecApplicantDocument.findAllByRecapplicant(recapp.recapplicant)

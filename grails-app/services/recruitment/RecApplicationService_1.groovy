@@ -261,20 +261,20 @@ class RecApplicationService_1 {
             // Experience data
             hm.teachingExperience = applicantteachingexp ? [
                 id: applicantteachingexp.id,
-                years: applicantteachingexp.years,
-                months: applicantteachingexp.months
+                years: applicantteachingexp.no_of_years,
+                months: applicantteachingexp.no_of_months
             ] : null
             
             hm.industryExperience = applicantindustryexp ? [
                 id: applicantindustryexp.id,
-                years: applicantindustryexp.years,
-                months: applicantindustryexp.months
+                years: applicantindustryexp.no_of_years,
+                months: applicantindustryexp.no_of_months
             ] : null
             
             hm.nonTeachingExperience = applicantnonteachingexp ? [
                 id: applicantnonteachingexp.id,
-                years: applicantnonteachingexp.years,
-                months: applicantnonteachingexp.months
+                years: applicantnonteachingexp.no_of_years,
+                months: applicantnonteachingexp.no_of_months
             ] : null
             
             hm.msg = "Form data fetched successfully"
@@ -753,9 +753,9 @@ class RecApplicationService_1 {
             RecExperience industryexp = RecExperience.findByRecexperiencetypeAndRecapplicant(industryexptype, applicant)
             RecExperience nonteachingexp = RecExperience.findByRecexperiencetypeAndRecapplicant(nonteachingexptype, applicant)
             
-            hm.teachingExperience = teachingexp ? [years: teachingexp.years, months: teachingexp.months] : null
-            hm.industryExperience = industryexp ? [years: industryexp.years, months: industryexp.months] : null
-            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.years, months: nonteachingexp.months] : null
+            hm.teachingExperience = teachingexp ? [years: teachingexp.no_of_years, months: teachingexp.no_of_months] : null
+            hm.industryExperience = industryexp ? [years: industryexp.no_of_years, months: industryexp.no_of_months] : null
+            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.no_of_years, months: nonteachingexp.no_of_months] : null
             
             // Application status
             def statusList = RecApplicationStatus.findAllByRecapplication(recapplication)
@@ -1283,9 +1283,9 @@ class RecApplicationService_1 {
             RecExperience industryexp = RecExperience.findByRecexperiencetypeAndRecapplicant(industryexptype, recapp.recapplicant)
             RecExperience nonteachingexp = RecExperience.findByRecexperiencetypeAndRecapplicant(nonteachingexptype, recapp.recapplicant)
             
-            hm.teachingExperience = teachingexp ? [years: teachingexp.years, months: teachingexp.months] : null
-            hm.industryExperience = industryexp ? [years: industryexp.years, months: industryexp.months] : null
-            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.years, months: nonteachingexp.months] : null
+            hm.teachingExperience = teachingexp ? [years: teachingexp.no_of_years, months: teachingexp.no_of_months] : null
+            hm.industryExperience = industryexp ? [years: industryexp.no_of_years, months: industryexp.no_of_months] : null
+            hm.nonTeachingExperience = nonteachingexp ? [years: nonteachingexp.no_of_years, months: nonteachingexp.no_of_months] : null
             
             // Documents with presigned URLs
             def docs = RecApplicantDocument.findAllByRecapplicant(recapp.recapplicant)
