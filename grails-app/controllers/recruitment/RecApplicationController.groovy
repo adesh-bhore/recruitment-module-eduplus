@@ -602,9 +602,41 @@ class RecApplicationController {
     def bulkRejectApplications() {
         processRequestWithParams("bulkRejectApplications", recApplicationService_4)
     }
+    
+    /**
+     * API 32: Get Recruitment Summary Dashboard
+     * GET /recApplication/getRecruitmentSummary
+     * 
+     * Headers: EPC-UID (username)
+     * Query Parameters: {
+     *   authorityType: String (optional - "HOD", "Dean", "Management", etc.),
+     *   academicYearId: Long (optional)
+     * }
+     * 
+     * Response: {
+     *   flag: true,
+     *   msg: "Recruitment summary fetched successfully",
+     *   recAuthorityType: { id, type, is_programwise_authority, is_streamwise_authority },
+     *   rec_branch_list: [{ id, name, program: { id, name } }],
+     *   deptlist: [{ id, name }],
+     *   fromdate: "yyyy-MM-dd",
+     *   todate: "yyyy-MM-dd",
+     *   recversionlist: [{ id, version_number, version_date }],
+     *   academicYears: [{ id, ay }],
+     *   currentAcademicYear: { id, ay },
+     *   authorityType: String,
+     *   summaryArray: [{ count, link, label }],
+     *   sendinterviewletterbuttonvisible: String,
+     *   recversion: { id, version_number, version_date },
+     *   recapplicationstatusmasterlist: [{ id, status }]
+     * }
+     */
+    def getRecruitmentSummary() {
+        processRequestWithoutParams("getRecruitmentSummary", recApplicationService_2)
+    }
 
     /**
-     * API 31: Export Applications
+     * API 33: Export Applications
      * GET /recApplication/exportApplications
      * 
      * Query Parameters: {

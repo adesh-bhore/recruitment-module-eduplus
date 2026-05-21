@@ -1262,4 +1262,235 @@ class RecApplicationService_2 {
             hm.applicationId = recapplication.id
             hm.attendance = isPresent ? "Present" : "Absent"
     }
+    
+    // OLD METHOD: recSummary (from RecApplicationController)
+    /**
+     * Get recruitment summary dashboard data with filters
+     * Used by: GET /recApplication/getRecruitmentSummary
+     */
+    def getRecruitmentSummary(hm, request, data) {
+        def uid = hm.remove("uid")
+        def authorityType = data?.authorityType
+        def academicYearId = data?.academicYearId
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
+        
+        // Find instructor and organization
+        Login login = Login.findByUsername(uid)
+        if (!login) {
+            hm.msg = "Login not found"
+            hm.flag = false
+            return
+        }
+        
+        Instructor instructor = Instructor.findByUid(login.username)
+        if (!instructor) {
+            hm.msg = "Instructor not found"
+            hm.flag = false
+            return
+        }
+        
+        Organization organization = instructor.organization
+        if (!organization) {
+            hm.msg = "Organization not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get current recruitment version
+        RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(organization, true)
+        if (!recversion) {
+            hm.msg = "Current recruitment version not found"
+            hm.flag = false
+            return
+        }
+        
+        def recversionlist = RecVersion.findAllByOrganizationAndIscurrentforbackendprocessing(organization, true)
+        
+        // Get Application Academic Year
+        ApplicationType at = ApplicationType.findByApplication_type("ERP")
+        RoleType rt = RoleType.findByApplicationtypeAndTypeAndOrganization(at, "Recruitment", organization)
+        ApplicationAcademicYear aay = ApplicationAcademicYear.findByRoletypeAndIsActiveAndOrganization(rt, true, organization)
+        
+        if (!aay) {
+            hm.msg = "Application Academic Year Not Set for Recruitment Module"
+            hm.flag = false
+            return
+        }
+        
+        // Get academic years
+        def ay = AcademicYear.list().sort { it.ay }.reverse(true)
+        AcademicYear currentAy = AcademicYear.findByAy(aay.academicyear)
+        
+        if (academicYearId) {
+            currentAy = AcademicYear.findById(academicYearId as Long)
+        }
+        
+        // Get authority type and faculty post
+        ERPFacultyPost facultypost = null
+        RecAuthorityType recAuthorityType = null
+        
+        if (authorityType) {
+            facultypost = ERPFacultyPost.findByNameAndOrganization(authorityType, organization)
+            if (facultypost) {
+                recAuthorityType = RecAuthorityType.findByErpfacultypostAndOrganization(facultypost, organization)
+            }
+        }
+        
+        // Get applications based on authority
+        def recapplication = []
+        def totalrecapplications = []
+        
+        if (authorityType == "HOD") {
+            // Filter by HOD's department
+            def recapplicationlist = RecApplication.findAllByRecversionAndOrganizationAndIsfeespaid(recversion, organization, true)
+            
+            for (RecApplication reca : recapplicationlist) {
+                for (RecBranch rb : reca.recbranch) {
+                    if (rb.program?.department?.hod?.id == instructor.id) {
+                        recapplication.add(reca)
+                        break
+                    }
+                }
+            }
+            
+            // Total applications (including unpaid)
+            def allApps = RecApplication.findAllByRecversionAndOrganization(recversion, organization)
+            for (RecApplication reca : allApps) {
+                for (RecBranch rb : reca.recbranch) {
+                    if (rb.program?.department?.hod?.id == instructor.id) {
+                        totalrecapplications.add(reca)
+                        break
+                    }
+                }
+            }
+        } else {
+            // Show all applications
+            recapplication.addAll(RecApplication.findAllByRecversionAndOrganizationAndIsfeespaid(recversion, organization, true))
+            totalrecapplications.addAll(RecApplication.findAllByRecversionAndOrganization(recversion, organization))
+        }
+        
+        // Build summary array
+        def array = []
+        array.add([count: totalrecapplications.size(), link: false, label: "Total Applications"])
+        array.add([count: recapplication.size(), link: true, label: "Paid Applications"])
+        
+        // Get application status masters
+        def recapplicationstatusmasterlist = RecApplicationStatusMaster.findAllByOrganization(organization)
+        
+        // Get send interview letter button visibility setting
+        def sendinterviewletterbuttonvisible = ERPRoleTypeSettings.findByNameIlikeAndOrganization(
+            'Send Interview Call Letter Button Visible', organization)?.value
+        
+        // Date range
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
+        def todate = df.format(new Date())
+        def fromdate = recversion?.version_date ? df.format(recversion.version_date) : todate
+        
+        // Get branch list based on authority
+        def rec_branch_list = []
+        def deptlist = []
+        
+        if (recAuthorityType) {
+            if (recAuthorityType.is_programwise_authority) {
+                def deptrolename = ['HOD']
+                def instrolename = ['Institute ERP Coordinator']
+                
+                // Get departments by role
+                def dept_list = []
+                if (authorityType == "HOD" && instructor.department) {
+                    dept_list.add(instructor.department)
+                } else {
+                    dept_list = Department.findAllByOrganization(organization)
+                }
+                
+                def program_list = Program.findAllByOrganizationAndDepartmentInList(organization, dept_list)
+                
+                if (recversionlist) {
+                    rec_branch_list = RecBranch.findAllByOrganizationAndRecversionInListAndProgramInList(
+                        organization, recversionlist, program_list)
+                } else {
+                    rec_branch_list = RecBranch.findAllByOrganizationAndProgramInList(organization, program_list)
+                }
+            } else if (recAuthorityType.is_streamwise_authority) {
+                def streams = Stream.findAllByDeanAndOrganization(instructor, organization)
+                deptlist = Department.createCriteria().list() {
+                    'in'('stream', streams)
+                    eq('organization', organization)
+                }
+            }
+        }
+        
+        // Build response
+        hm.recAuthorityType = recAuthorityType ? [
+            id: recAuthorityType.id,
+            type: recAuthorityType.type,
+            is_programwise_authority: recAuthorityType.is_programwise_authority,
+            is_streamwise_authority: recAuthorityType.is_streamwise_authority
+        ] : null
+        
+        hm.rec_branch_list = rec_branch_list.collect { branch ->
+            [
+                id: branch.id,
+                name: branch.name,
+                program: [
+                    id: branch.program?.id,
+                    name: branch.program?.name
+                ]
+            ]
+        }
+        
+        hm.deptlist = deptlist.collect { dept ->
+            [
+                id: dept.id,
+                name: dept.name
+            ]
+        }
+        
+        hm.fromdate = fromdate
+        hm.todate = todate
+        hm.recversionlist = recversionlist.collect { rv ->
+            [
+                id: rv.id,
+                version_number: rv.version_number,
+                version_date: rv.version_date ? df.format(rv.version_date) : null
+            ]
+        }
+        
+        hm.academicYears = ay.collect { academicYear ->
+            [
+                id: academicYear.id,
+                ay: academicYear.ay
+            ]
+        }
+        
+        hm.currentAcademicYear = currentAy ? [
+            id: currentAy.id,
+            ay: currentAy.ay
+        ] : null
+        
+        hm.authorityType = authorityType
+        hm.summaryArray = array
+        hm.sendinterviewletterbuttonvisible = sendinterviewletterbuttonvisible
+        
+        hm.recversion = [
+            id: recversion.id,
+            version_number: recversion.version_number,
+            version_date: recversion.version_date ? df.format(recversion.version_date) : null
+        ]
+        
+        hm.recapplicationstatusmasterlist = recapplicationstatusmasterlist.collect { status ->
+            [
+                id: status.id,
+                status: status.status
+            ]
+        }
+        
+        hm.msg = "Recruitment summary fetched successfully"
+        hm.flag = true
+    }
 }
