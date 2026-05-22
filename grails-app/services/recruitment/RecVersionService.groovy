@@ -234,6 +234,7 @@ class RecVersionService {
     }
 
     // OLD METHOD: statisticssummaryreport (from RecVersionController)
+    // OLD METHOD: recappdata (from RecApplicationController)
     /**
      * Get statistics summary report
      * Returns: Matrix of applications by branch and post with totals

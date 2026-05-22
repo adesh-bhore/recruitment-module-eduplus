@@ -286,4 +286,27 @@ class RecExamController {
     def saveSelectedApplications() {
         processRequestWithParams("saveSelectedApplications")
     }
+    
+    /**
+     * API 17: Get Expert Groups Result Status
+     * GET /recExam/getExpertGroupsResultStatus
+     * Headers: EPC-UID
+     * 
+     * Get all expert groups with their result status
+     */
+    def getExpertGroupsResultStatus() {
+        processRequestWithoutParams("getExpertGroupsResultStatus")
+    }
+    
+    /**
+     * API 18: Get Candidate List
+     * GET /recExam/getCandidateList
+     * Headers: EPC-UID
+     * Query Params: expertGroupId (required), category (required: "Short Listed" or "Rejected")
+     * 
+     * Get list of candidates by expert group and selection status
+     */
+    def getCandidateList() {
+        processRequestWithoutParams("getCandidateList")
+    }
 }

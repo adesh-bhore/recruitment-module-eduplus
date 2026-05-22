@@ -299,7 +299,7 @@ class RecApplicationService_2 {
         ]
     }
     
-    // OLD METHOD: recappdata (from RecApplicationController)
+    
     /**
      * Get detailed application list with complete information
      * Used by: GET /recApplication/getDetailedApplicationList
@@ -692,7 +692,8 @@ class RecApplicationService_2 {
             println("=== getApplicationCounts END ===")
     }
     
-    // OLD METHOD: recappdata (from RecApplicationController)
+    
+    // OLD METHOD: applicationform (from RecApplicationController)
     /**
      * Get application data for specific application
      * Used by: GET /recApplication/getApplicationData

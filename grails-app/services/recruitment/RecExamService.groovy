@@ -1396,7 +1396,8 @@ class RecExamService {
                     applicant: [
                         id: app.recapplicant.id,
                         fullname: app.recapplicant.fullname,
-                        email: app.recapplicant.email
+                        email: app.recapplicant.email,
+                        category: app.recapplicant.reccategory?.name
                     ],
                     application: [
                         id: app.recapplication.id,
@@ -1649,6 +1650,220 @@ class RecExamService {
             hm.results = results
             hm.msg = "Applications processed successfully"
             hm.flag = true
+    }
+    
+    // OLD METHOD: grpresultstatus (from RecExamController)
+    /**
+     * Get expert groups with result status
+     * Used by: GET /recExam/getExpertGroupsResultStatus
+     */
+    def getExpertGroupsResultStatus(hm, request, data) {
+        def uid = hm.remove("uid")
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
+        
+        // Find instructor and organization
+        Login login = Login.findByUsername(uid)
+        if (!login) {
+            hm.msg = "Login not found"
+            hm.flag = false
+            return
+        }
+        
+        Instructor instructor = Instructor.findByUid(login.username)
+        if (!instructor) {
+            hm.msg = "Instructor not found"
+            hm.flag = false
+            return
+        }
+        
+        Organization org = instructor.organization
+        if (!org) {
+            hm.msg = "Organization not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get current recruitment version
+        RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+        if (!recversion) {
+            hm.msg = "Current recruitment version not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get all expert groups
+        def exprtgrp = RecDeptExpertGroup.findAllByOrganizationAndRecversion(org, recversion)
+        
+        // Format response
+        def formattedGroups = []
+        exprtgrp.each { grp ->
+            def programs = []
+            grp.program?.each { prog ->
+                programs.add([
+                    id: prog.id,
+                    name: prog.name
+                ])
+            }
+            
+            formattedGroups.add([
+                id: grp.id,
+                cutoff: grp.cutoff,
+                groupno: grp.groupno,
+                groupname: grp.groupname,
+                deptGroup: [
+                    id: grp.recdeptgroup?.id,
+                    groupno: grp.recdeptgroup?.groupno
+                ],
+                programs: programs
+            ])
+        }
+        
+        hm.expertGroups = formattedGroups
+        hm.totalCount = formattedGroups.size()
+        hm.recversion = [
+            id: recversion.id,
+            version_number: recversion.version_number
+        ]
+        hm.msg = "Expert groups with result status fetched successfully"
+        hm.flag = true
+    }
+    
+    // OLD METHOD: candidatelist (from RecExamController)
+    /**
+     * Get candidate list by expert group and category (shortlisted/rejected)
+     * Used by: GET /recExam/getCandidateList
+     */
+    def getCandidateList(hm, request, data) {
+        def uid = hm.remove("uid")
+        def expertGroupId = data?.expertGroupId
+        def category = data?.category // "Short Listed" or "Rejected"
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
+        
+        if (!expertGroupId) {
+            hm.msg = "Expert group ID is required"
+            hm.flag = false
+            return
+        }
+        
+        if (!category) {
+            hm.msg = "Category is required (Short Listed or Rejected)"
+            hm.flag = false
+            return
+        }
+        
+        // Find instructor and organization
+        Login login = Login.findByUsername(uid)
+        if (!login) {
+            hm.msg = "Login not found"
+            hm.flag = false
+            return
+        }
+        
+        Instructor instructor = Instructor.findByUid(login.username)
+        if (!instructor) {
+            hm.msg = "Instructor not found"
+            hm.flag = false
+            return
+        }
+        
+        Organization org = instructor.organization
+        if (!org) {
+            hm.msg = "Organization not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get current recruitment version
+        RecVersion recversion = RecVersion.findByOrganizationAndIscurrentforbackendprocessing(org, true)
+        if (!recversion) {
+            hm.msg = "Current recruitment version not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get expert group
+        RecDeptExpertGroup xgrp = RecDeptExpertGroup.findById(expertGroupId as Long)
+        if (!xgrp) {
+            hm.msg = "Expert group not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get round 1
+        RecApplicationRound round1 = RecApplicationRound.findByRoundnumberAndOrganization("1", org)
+        if (!round1) {
+            hm.msg = "Application round 1 not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get candidates based on category
+        def recApplicationRoundTransaction
+        if (category == 'Short Listed') {
+            recApplicationRoundTransaction = RecApplicationRoundTransaction.findAllByOrganizationAndRecversionAndRecdeptexpertgroupAndRecapplicationroundAndIsrejected(
+                org, recversion, xgrp, round1, false)
+        } else {
+            recApplicationRoundTransaction = RecApplicationRoundTransaction.findAllByOrganizationAndRecversionAndRecdeptexpertgroupAndRecapplicationroundAndIsrejected(
+                org, recversion, xgrp, round1, true)
+        }
+        
+        // Format response
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
+        def formattedCandidates = []
+        
+        recApplicationRoundTransaction.each { trans ->
+            formattedCandidates.add([
+                id: trans.id,
+                isrejected: trans.isrejected,
+                applicant: [
+                    id: trans.recapplicant.id,
+                    fullname: trans.recapplicant.fullname,
+                    email: trans.recapplicant.email,
+                    mobilenumber: trans.recapplicant.mobilenumber,
+                    category: trans.recapplicant.reccategory?.name
+                ],
+                application: [
+                    id: trans.recapplication.id,
+                    applicaitionid: trans.recapplication.applicaitionid,
+                    applicationdate: trans.recapplication.applicationdate ? df.format(trans.recapplication.applicationdate) : null
+                ],
+                branch: trans.recapplication.recbranch?.collect { branch ->
+                    [
+                        id: branch.id,
+                        name: branch.name
+                    ]
+                },
+                round: [
+                    id: trans.recapplicationround.id,
+                    roundnumber: trans.recapplicationround.roundnumber
+                ]
+            ])
+        }
+        
+        hm.candidates = formattedCandidates
+        hm.totalCount = formattedCandidates.size()
+        hm.category = category
+        hm.expertGroup = [
+            id: xgrp.id,
+            cutoff: xgrp.cutoff,
+            groupname: xgrp.groupname
+        ]
+        hm.recversion = [
+            id: recversion.id,
+            version_number: recversion.version_number
+        ]
+        hm.msg = "Candidate list fetched successfully"
+        hm.flag = true
     }
 
     
