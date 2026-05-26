@@ -434,7 +434,19 @@ class RecApplicationController {
     }
     
     /**
-     * API 21: Reject application with reason
+     * API 21: Get Shortlisted Candidates List
+     * GET /recApplication/getShortlistedCandidates
+     * Headers: EPC-UID
+     * 
+     * Returns list of all shortlisted candidates with their details
+     * (academics, experience, age) for attendance management
+     */
+    def getShortlistedCandidates() {
+        processRequestWithoutParams("getShortlistedCandidates", recApplicationService_2)
+    }
+    
+    /**
+     * API 22: Reject application with reason
      * POST /recApplication/rejectApplication
      * Headers: EPC-UID
      * Request Body: {
@@ -446,21 +458,6 @@ class RecApplicationController {
      */
     def rejectApplication() {
         processRequestWithParams("rejectApplication", recApplicationService_2)
-    }
-    
-    /**
-     * API 22: Mark applicant attendance for interview
-     * POST /recApplication/markAttendance
-     * Headers: EPC-UID
-     * Request Body: {
-     *   applicationId: Long,
-     *   branchId: Long (optional),
-     *   isPresent: Boolean,
-     *   attendanceRemark: String (optional)
-     * }
-     */
-    def markAttendance() {
-        processRequestWithParams("markAttendance", recApplicationService_2)
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -670,3 +667,43 @@ class RecApplicationController {
     }
 }
 
+
+    /**
+     * API 34: Get Application Summary for Management/Establishment Section
+     * GET /recApplication/getApplicationSummaryManagement
+     * 
+     * Headers: EPC-UID (username)
+     * Query Parameters: {
+     *   version: Long (required - recruitment version ID),
+     *   status: String (required - status ID or "All"),
+     *   fromdate: String (required - yyyy-MM-dd),
+     *   todate: String (required - yyyy-MM-dd),
+     *   recAuthorityType: Long (required - authority type ID)
+     * }
+     * 
+     * Response: {
+     *   flag: true,
+     *   msg: "Application summary for management fetched successfully",
+     *   authoritystatuslistManagement: [{ id, status, iscalledforinterview, remark, approvedBy }],
+     *   deptlist: [{ id, name }],
+     *   branchlist: [String],
+     *   isapproved: Boolean,
+     *   recapplication: [{ id, applicaitionid, applicantName, email, mobilenumber, category }],
+     *   checkedlist: [String],
+     *   remarklist: [String],
+     *   authoritystatuslisthod: [{ id, status, iscalledforinterview, remark }],
+     *   authoritystatuslistregistrar: [{ id, status, iscalledforinterview, remark }],
+     *   permanentaddress: [{ id, add, taluka, pin, country, state, dist, city }],
+     *   localaddress: [{ id, add, taluka, pin, country, state, dist, city }],
+     *   sendinterviewletterbuttonvisible: String,
+     *   recversion: Long,
+     *   status: String,
+     *   fromdate: String,
+     *   todate: String,
+     *   recAuthorityType: Long
+     * }
+     */
+    def getApplicationSummaryManagement() {
+        processRequestWithoutParams("getApplicationSummaryManagement", recApplicationService_2)
+    }
+}

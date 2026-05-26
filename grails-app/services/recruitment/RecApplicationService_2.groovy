@@ -1199,69 +1199,175 @@ class RecApplicationService_2 {
     
     // OLD METHOD: recapplicantattendance (from RecApplicationController)
     /**
-     * Mark applicant attendance for interview
-     * Used by: POST /recApplication/markAttendance
+     * Get list of shortlisted candidates for attendance management
+     * Used by: GET /recApplication/getShortlistedCandidates
      */
-    def markAttendance(hm, request, data) {
+    def getShortlistedCandidates(hm, request, data) {
         def uid = hm.remove("uid")
-        def applicationId = data.applicationId
-        def branchId = data.branchId
-        def isPresent = data.isPresent // true/false
-        def attendanceRemark = data.attendanceRemark
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
+        
+        // Find instructor and organization
+        Login login = Login.findByUsername(uid)
+        if (!login) {
+            hm.msg = "Login not found"
+            hm.flag = false
+            return
+        }
+        
+        Instructor instructor = Instructor.findByUid(login.username)
+        if (!instructor) {
+            hm.msg = "Instructor not found"
+            hm.flag = false
+            return
+        }
+        
+        Organization organization = instructor.organization
+        if (!organization) {
+            hm.msg = "Organization not found"
+            hm.flag = false
+            return
+        }
+        
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
+        
+        // Get last authority type (usually Management)
+        RecAuthorityType recauthoritytype = RecAuthorityType.findByIslastauthorityAndOrganization(true, organization)
+        if (!recauthoritytype) {
+            hm.msg = "Last authority type not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get all shortlisted candidates (called for interview)
+        def recApplicationStatuslist = RecApplicationStatus.findAllByOrganizationAndRecauthoritytypeAndIscalledforinterview(
+            organization, recauthoritytype, true)
+        
+        // Filter by current recruitment version
+        TreeSet recapplicationstatusid = new TreeSet()
+        for (RecApplicationStatus recs : recApplicationStatuslist) {
+            if (recs.recapplication.recversion.iscurrentforbackendprocessing == true) {
+                recapplicationstatusid.add(recs.recapplication.id)
+            }
+        }
+        
+        // Get degree types
+        def ugacademics = RecDegree.findByNameAndIsactive("B.E. or equivalent", true)
+        def pgacademics = RecDegree.findByNameLikeAndIsactive("%M.E%", true)
+        def phdacademics = RecDegree.findByNameAndIsactive("Ph.D.", true)
+        def otheracademics = RecDegree.findByNameAndIsactive("Any other", true)
+        
+        // Get experience types
+        def experienceteaching = RecExperienceType.findByType("Teaching")
+        def experienceindustry = RecExperienceType.findByType("Industrial/Research")
+        
+        // Build candidate list
+        def candidatesList = []
+        
+        for (appId in recapplicationstatusid) {
+            RecApplication recapplication = RecApplication.findById(appId)
+            if (!recapplication) continue
             
-            if (!uid) {
-                hm.msg = "User not authenticated"
-                hm.flag = false
-                return
+            RecApplicationStatus recStatus = RecApplicationStatus.findByRecapplication(recapplication)
+            if (!recStatus) continue
+            
+            def applicant = recapplication.recapplicant
+            
+            // Get academics
+            def ugAcademic = RecApplicantAcademics.findByRecapplicantAndRecdegree(applicant, ugacademics)
+            def pgAcademic = RecApplicantAcademics.findByRecapplicantAndRecdegree(applicant, pgacademics)
+            def phdAcademic = RecApplicantAcademics.findByRecapplicantAndRecdegree(applicant, phdacademics)
+            def otherAcademic = RecApplicantAcademics.findByRecapplicantAndRecdegree(applicant, otheracademics)
+            
+            // Get experience
+            def teaching = RecExperience.findByRecapplicantAndRecexperiencetype(applicant, experienceteaching)
+            def industry = RecExperience.findByRecapplicantAndRecexperiencetype(applicant, experienceindustry)
+            
+            // Calculate age
+            def age = 0
+            if (applicant.dateofbirth) {
+                def today = new Date()
+                age = today.year - applicant.dateofbirth.year
             }
             
-            if (!applicationId) {
-                hm.msg = "Application ID is required"
-                hm.flag = false
-                return
-            }
-            
-            // Find instructor
-            Login login = Login.findByUsername(uid)
-            Instructor instructor = Instructor.findByUid(login.username)
-            Organization organization = instructor.organization
-            
-            // Find application
-            RecApplication recapplication = RecApplication.findById(applicationId)
-            if (!recapplication) {
-                hm.msg = "Application not found"
-                hm.flag = false
-                return
-            }
-            
-            // Find or create attendance record
-            // Note: Assuming there's a RecApplicantAttendance domain class
-            // If not, we can store attendance info in RecApplicationStatus remark
-            
-            def statusList = RecApplicationStatus.findAllByRecapplication(recapplication)
-            def shortlistedStatus = statusList.find { 
-                it.iscalledforinterview == true 
-            }
-            
-            if (shortlistedStatus) {
-                def attendanceInfo = isPresent ? "Present" : "Absent"
-                if (attendanceRemark) {
-                    attendanceInfo += ": ${attendanceRemark}"
-                }
-                
-                // Append to remark
-                def currentRemark = shortlistedStatus.remark ?: ""
-                shortlistedStatus.remark = currentRemark + "\nAttendance: ${attendanceInfo}"
-                shortlistedStatus.username = uid
-                shortlistedStatus.updation_date = new Date()
-                shortlistedStatus.updation_ip_address = request.getRemoteAddr()
-                shortlistedStatus.save(failOnError: true, flush: true)
-            }
-            
-            hm.msg = "Attendance marked successfully"
-            hm.flag = true
-            hm.applicationId = recapplication.id
-            hm.attendance = isPresent ? "Present" : "Absent"
+            candidatesList.add([
+                applicationStatus: [
+                    id: recStatus.id,
+                    iscalledforinterview: recStatus.iscalledforinterview,
+                    approve_date: recStatus.approve_date ? df.format(recStatus.approve_date) : null,
+                    remark: recStatus.remark
+                ],
+                application: [
+                    id: recapplication.id,
+                    applicaitionid: recapplication.applicaitionid,
+                    applicationdate: recapplication.applicationdate ? df.format(recapplication.applicationdate) : null
+                ],
+                applicant: [
+                    id: applicant.id,
+                    fullname: applicant.fullname,
+                    email: applicant.email,
+                    mobilenumber: applicant.mobilenumber,
+                    dateofbirth: applicant.dateofbirth ? df.format(applicant.dateofbirth) : null,
+                    age: age,
+                    category: applicant.reccategory?.name
+                ],
+                branches: recapplication.recbranch?.collect { b ->
+                    [id: b.id, name: b.name]
+                },
+                posts: recapplication.recpost?.collect { p ->
+                    [id: p.id, designation: p.designation?.name]
+                },
+                academics: [
+                    ug: ugAcademic ? [
+                        degree: ugAcademic.recdegree?.name,
+                        name_of_degree: ugAcademic.name_of_degree,
+                        university: ugAcademic.university,
+                        yearofpassing: ugAcademic.yearofpassing,
+                        cpi_marks: ugAcademic.cpi_marks
+                    ] : null,
+                    pg: pgAcademic ? [
+                        degree: pgAcademic.recdegree?.name,
+                        name_of_degree: pgAcademic.name_of_degree,
+                        university: pgAcademic.university,
+                        yearofpassing: pgAcademic.yearofpassing,
+                        cpi_marks: pgAcademic.cpi_marks
+                    ] : null,
+                    phd: phdAcademic ? [
+                        degree: phdAcademic.recdegree?.name,
+                        name_of_degree: phdAcademic.name_of_degree,
+                        university: phdAcademic.university,
+                        yearofpassing: phdAcademic.yearofpassing,
+                        cpi_marks: phdAcademic.cpi_marks
+                    ] : null,
+                    other: otherAcademic ? [
+                        degree: otherAcademic.recdegree?.name,
+                        name_of_degree: otherAcademic.name_of_degree,
+                        university: otherAcademic.university,
+                        yearofpassing: otherAcademic.yearofpassing,
+                        cpi_marks: otherAcademic.cpi_marks
+                    ] : null
+                ],
+                experience: [
+                    teaching: teaching ? [
+                        years: teaching.no_of_years,
+                        months: teaching.no_of_months
+                    ] : null,
+                    industry: industry ? [
+                        years: industry.no_of_years,
+                        months: industry.no_of_months
+                    ] : null
+                ]
+            ])
+        }
+        
+        hm.candidates = candidatesList
+        hm.totalCount = candidatesList.size()
+        hm.msg = "Shortlisted candidates fetched successfully"
+        hm.flag = true
     }
     
     // OLD METHOD: recSummary (from RecApplicationController)
@@ -1492,6 +1598,447 @@ class RecApplicationService_2 {
         }
         
         hm.msg = "Recruitment summary fetched successfully"
+        hm.flag = true
+    }
+}
+    }
+    
+    // OLD METHOD: recApplicationSummary_management (from RecApplicationController)
+    /**
+     * Get application summary for Management/Establishment Section with detailed authority status
+     * Used by: GET /recApplication/getApplicationSummaryManagement
+     */
+    def getApplicationSummaryManagement(hm, request, data) {
+        def uid = hm.remove("uid")
+        def versionId = data?.version
+        def statusParam = data?.status
+        def fromdate = data?.fromdate
+        def todate = data?.todate
+        def recAuthorityTypeId = data?.recAuthorityType
+        
+        if (!uid) {
+            hm.msg = "User not authenticated"
+            hm.flag = false
+            return
+        }
+        
+        // Find instructor
+        Login login = Login.findByUsername(uid)
+        if (!login) {
+            hm.msg = "Login not found"
+            hm.flag = false
+            return
+        }
+        
+        Instructor instructor = Instructor.findByUid(login.username)
+        if (!instructor) {
+            hm.msg = "Instructor not found"
+            hm.flag = false
+            return
+        }
+        
+        Organization organization = instructor.organization
+        
+        // Get recruitment version
+        RecVersion recversion = RecVersion.findById(versionId)
+        if (!recversion) {
+            hm.msg = "Recruitment version not found"
+            hm.flag = false
+            return
+        }
+        
+        // Get status master
+        def recApplicationStatusMaster = []
+        if (statusParam == 'All') {
+            recApplicationStatusMaster = RecApplicationStatusMaster.findAllByOrganization(organization)
+        } else {
+            def statusMaster = RecApplicationStatusMaster.findById(statusParam)
+            if (statusMaster) {
+                recApplicationStatusMaster = [statusMaster]
+            }
+        }
+        
+        // Parse dates
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
+        Date fromdateDate = null
+        Date todateDate = null
+        
+        if (fromdate) {
+            fromdateDate = df.parse(fromdate)
+        }
+        if (todate) {
+            todateDate = df.parse(todate)
+        }
+        
+        ArrayList deptlist = new ArrayList()
+        ArrayList branchlist = new ArrayList()
+        def recapplication = []
+        
+        RecAuthorityType currentauth = RecAuthorityType.findByIdAndOrganization(recAuthorityTypeId, instructor.organization)
+        if (!currentauth) {
+            hm.msg = "Authority type not found"
+            hm.flag = false
+            return
+        }
+        
+        RecAuthorityType hodentry = RecAuthorityType.findByTypeAndOrganization("HOD", instructor.organization)
+        
+        // Handle programwise authority
+        if (currentauth.is_programwise_authority) {
+            def recapplicationlist = null
+            if (fromdateDate && todateDate && recversion) {
+                recapplicationlist = RecApplication.createCriteria().list() {
+                    eq("recversion", recversion)
+                    eq("organization", organization)
+                    eq("isfeespaid", true)
+                    between("applicationdate", fromdateDate, todateDate + 1)
+                }
+            }
+            
+            def recapplicationstatushod = null
+            RecAuthorityType hod = RecAuthorityType.findByTypeAndOrganization("HOD", instructor.organization)
+            
+            if (recapplicationlist) {
+                def recbranch = RecBranch.findByOrganizationAndRecversionAndProgram(organization, recversion, instructor?.program)
+                
+                if (recbranch) {
+                    recapplicationstatushod = RecApplicationStatus.createCriteria().list() {
+                        eq("organization", organization)
+                        eq("recbranch", recbranch)
+                        eq("recauthoritytype", hod)
+                        'in'("recapplicationstatusmaster", recApplicationStatusMaster)
+                        'in'("recapplication", recapplicationlist)
+                    }
+                }
+            }
+            
+            recapplicationstatushod?.each { status ->
+                RecApplication reca = status.recapplication
+                reca.recbranch?.each { RecBranch rb ->
+                    if (rb.program?.department?.hod?.id == instructor.id) {
+                        deptlist.add(rb.program.department)
+                        if (!recapplication.contains(reca)) {
+                            recapplication.add(reca)
+                        }
+                        return // break
+                    }
+                }
+            }
+        }
+        
+        // Handle streamwise authority
+        if (currentauth.is_streamwise_authority) {
+            def recapplicationlist = null
+            if (fromdateDate && todateDate && recversion) {
+                recapplicationlist = RecApplication.createCriteria().list() {
+                    eq("recversion", recversion)
+                    eq("organization", organization)
+                    eq("isfeespaid", true)
+                    between("applicationdate", fromdateDate, todateDate + 1)
+                }
+            }
+            
+            def recapplicationstatushod = null
+            RecAuthorityType hod = RecAuthorityType.findByTypeAndOrganization("HOD", instructor.organization)
+            
+            if (recapplicationlist) {
+                def recbranch = RecBranch.findByOrganizationAndRecversionAndProgram(organization, recversion, instructor?.program)
+                
+                if (recbranch) {
+                    recapplicationstatushod = RecApplicationStatus.createCriteria().list() {
+                        eq("organization", organization)
+                        eq("recbranch", recbranch)
+                        eq("recauthoritytype", currentauth)
+                        'in'("recapplicationstatusmaster", recApplicationStatusMaster)
+                        'in'("recapplication", recapplicationlist)
+                    }
+                }
+            }
+            
+            recapplicationstatushod?.each { status ->
+                RecApplication reca = status.recapplication
+                reca.recbranch?.each { RecBranch rb ->
+                    if (rb.program?.department?.hod?.id == instructor.id) {
+                        deptlist.add(rb.program.department)
+                        if (!recapplication.contains(reca)) {
+                            recapplication.add(reca)
+                        }
+                        return // break
+                    }
+                }
+            }
+        }
+        // Handle Management authority
+        else if (currentauth.type == "Management") {
+            def departmentlist = Department.findAllByOrganization(organization)
+            def recapplicationlist = null
+            
+            if (fromdateDate && todateDate && recversion) {
+                recapplicationlist = RecApplication.createCriteria().list() {
+                    eq("recversion", recversion)
+                    eq("organization", organization)
+                    eq("isfeespaid", true)
+                    between("applicationdate", fromdateDate, todateDate + 1)
+                }
+            }
+            
+            def recapplicationstatusmanagement = null
+            RecAuthorityType management = RecAuthorityType.findByTypeAndOrganization("Management", instructor.organization)
+            
+            if (recapplicationlist) {
+                recapplicationstatusmanagement = RecApplicationStatus.createCriteria().list() {
+                    eq("organization", organization)
+                    eq("recauthoritytype", management)
+                    'in'("recapplicationstatusmaster", recApplicationStatusMaster)
+                    'in'("recapplication", recapplicationlist)
+                }
+            }
+            
+            recapplicationstatusmanagement?.each { status ->
+                RecApplication reca = status.recapplication
+                if (status.recbranch?.program?.department?.id) {
+                    deptlist.add(status.recbranch.program.department)
+                    branchlist.add(status.recbranch.name)
+                }
+                if (!recapplication.contains(reca)) {
+                    recapplication.add(reca)
+                }
+            }
+        }
+        // Handle Establishment Section or other authorities
+        else {
+            def recapplicationlist = null
+            if (fromdateDate && todateDate && recversion) {
+                recapplicationlist = RecApplication.createCriteria().list() {
+                    eq("recversion", recversion)
+                    eq("organization", organization)
+                    eq("isfeespaid", true)
+                    between("applicationdate", fromdateDate, todateDate + 1)
+                }
+            }
+            
+            def recapplicationstatusest = null
+            RecAuthorityType est = RecAuthorityType.findByTypeAndOrganization("Establishment Section", instructor.organization)
+            
+            if (recapplicationlist) {
+                recapplicationstatusest = RecApplicationStatus.createCriteria().list() {
+                    eq("organization", organization)
+                    eq("recauthoritytype", currentauth)
+                    'in'("recapplicationstatusmaster", recApplicationStatusMaster)
+                    'in'("recapplication", recapplicationlist)
+                }
+            }
+            
+            if (recapplicationstatusest) {
+                recapplication.addAll(recapplicationstatusest*.recapplication)
+            }
+            
+            recapplicationstatusest?.each { status ->
+                if (status.recbranch?.program?.department?.id) {
+                    deptlist.add(status.recbranch.program.department)
+                    branchlist.add(status.recbranch.name)
+                }
+            }
+        }
+        
+        // Build detailed response with authority status lists
+        RecAuthorityType recauthoritytype = RecAuthorityType.findByTypeAndOrganization(currentauth.type, instructor.organization)
+        ArrayList checkedlist = new ArrayList()
+        ArrayList remarklist = new ArrayList()
+        ArrayList authoritystatuslisthod = new ArrayList()
+        ArrayList authoritystatuslistregistrar = new ArrayList()
+        ArrayList authoritystatuslistManagement = new ArrayList()
+        ArrayList localaddress = new ArrayList()
+        ArrayList permanentaddress = new ArrayList()
+        
+        int i = 0
+        int approvecount = 0
+        RecAuthorityType management = RecAuthorityType.findByTypeAndOrganization("Management", instructor.organization)
+        def programlist = Program.findAllByOrganization(instructor.organization)
+        
+        for (RecApplication r : recapplication) {
+            // Get addresses
+            AddressType at = AddressType.findByType("Permanent")
+            def permanent = Address.findByRecapplicantAndAddresstype(r?.recapplicant, at)
+            permanentaddress.add(permanent)
+            
+            at = AddressType.findByType("Local")
+            def local = Address.findByRecapplicantAndAddresstype(r?.recapplicant, at)
+            localaddress.add(local)
+            
+            RecBranch recbranch = null
+            RecAuthorityType hod = RecAuthorityType.findByTypeAndOrganization("HOD", instructor.organization)
+            RecAuthorityType registrar = RecAuthorityType.findByTypeAndOrganization("Establishment Section", instructor.organization)
+            
+            // For HOD
+            Department dept = deptlist[i]
+            RecApplicationStatus recapplicationstatushod = null
+            
+            for (RecBranch rb : r.recbranch) {
+                if (rb?.program?.department?.id == dept?.id) {
+                    recapplicationstatushod = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytypeAndRecbranch(
+                        organization, r, hod, rb)
+                    if (recapplicationstatushod != null) {
+                        recbranch = rb
+                        break
+                    }
+                }
+            }
+            
+            if (recapplicationstatushod == null) {
+                for (Program pg : programlist) {
+                    if (pg?.department?.id == dept?.id) {
+                        RecBranch rcb = RecBranch.findByOrganizationAndIsactiveAndRecversionAndProgram(
+                            organization, true, recversion, pg)
+                        recapplicationstatushod = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytypeAndRecbranch(
+                            organization, r, hod, rcb)
+                        if (recapplicationstatushod != null) {
+                            recbranch = rcb
+                            break
+                        }
+                    }
+                }
+            }
+            authoritystatuslisthod.add(recapplicationstatushod)
+            
+            // For Registrar
+            RecApplicationStatus recapplicationstatusregistrar = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytypeAndRecbranch(
+                organization, r, registrar, recbranch)
+            authoritystatuslistregistrar.add(recapplicationstatusregistrar)
+            
+            // For current authority
+            RecApplicationStatus recapplicationstatus = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytypeAndRecbranch(
+                organization, r, recauthoritytype, recbranch)
+            
+            if (recapplicationstatus == null) {
+                if (authoritystatuslisthod[i]?.iscalledforinterview == true && 
+                    authoritystatuslistregistrar[i]?.iscalledforinterview == true) {
+                    checkedlist.add("true")
+                } else {
+                    checkedlist.add("false")
+                }
+                remarklist.add("")
+            } else {
+                if (recapplicationstatus.iscalledforinterview == true) {
+                    checkedlist.add("true")
+                } else if (recapplicationstatus.iscalledforinterview == false) {
+                    checkedlist.add("false")
+                }
+                remarklist.add(recapplicationstatus.remark)
+            }
+            
+            if (recapplicationstatus?.approvedby != null) {
+                approvecount++
+            }
+            
+            // For Management
+            def recapplicationstatusManagement = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytypeAndRecbranch(
+                organization, r, management, recbranch)
+            
+            if (currentauth.type == "Management") {
+                recapplicationstatusManagement = RecApplicationStatus.findByOrganizationAndRecapplicationAndRecauthoritytype(
+                    organization, r, recauthoritytype)
+            }
+            authoritystatuslistManagement.add(recapplicationstatusManagement)
+            
+            i++
+        }
+        
+        boolean isapproved = false
+        if (i == approvecount) {
+            isapproved = true
+        }
+        
+        def sendinterviewletterbuttonvisible = ERPRoleTypeSettings.findByNameIlikeAndOrganization(
+            'Send Interview Call Letter Button Visible', organization)?.value
+        
+        // Build response
+        hm.authoritystatuslistManagement = authoritystatuslistManagement.collect { status ->
+            status ? [
+                id: status.id,
+                status: status.recapplicationstatusmaster?.status,
+                iscalledforinterview: status.iscalledforinterview,
+                remark: status.remark,
+                approvedBy: status.approvedby ? "${status.approvedby.person?.firstName} ${status.approvedby.person?.lastName}".trim() : null
+            ] : null
+        }
+        
+        hm.deptlist = deptlist.collect { dept ->
+            [
+                id: dept.id,
+                name: dept.name
+            ]
+        }
+        
+        hm.branchlist = branchlist
+        hm.isapproved = isapproved
+        
+        hm.recapplication = recapplication.collect { app ->
+            [
+                id: app.id,
+                applicaitionid: app.applicaitionid,
+                applicantName: app.recapplicant?.fullname,
+                email: app.recapplicant?.email,
+                mobilenumber: app.recapplicant?.mobilenumber,
+                category: app.recapplicant?.reccategory?.name
+            ]
+        }
+        
+        hm.checkedlist = checkedlist
+        hm.remarklist = remarklist
+        
+        hm.authoritystatuslisthod = authoritystatuslisthod.collect { status ->
+            status ? [
+                id: status.id,
+                status: status.recapplicationstatusmaster?.status,
+                iscalledforinterview: status.iscalledforinterview,
+                remark: status.remark
+            ] : null
+        }
+        
+        hm.authoritystatuslistregistrar = authoritystatuslistregistrar.collect { status ->
+            status ? [
+                id: status.id,
+                status: status.recapplicationstatusmaster?.status,
+                iscalledforinterview: status.iscalledforinterview,
+                remark: status.remark
+            ] : null
+        }
+        
+        hm.permanentaddress = permanentaddress.collect { addr ->
+            addr ? [
+                id: addr.id,
+                add: addr.add,
+                taluka: addr.taluka,
+                pin: addr.pin,
+                country: addr.country?.name,
+                state: addr.state?.name,
+                dist: addr.dist?.name,
+                city: addr.city?.name
+            ] : null
+        }
+        
+        hm.localaddress = localaddress.collect { addr ->
+            addr ? [
+                id: addr.id,
+                add: addr.add,
+                taluka: addr.taluka,
+                pin: addr.pin,
+                country: addr.country?.name,
+                state: addr.state?.name,
+                dist: addr.dist?.name,
+                city: addr.city?.name
+            ] : null
+        }
+        
+        hm.sendinterviewletterbuttonvisible = sendinterviewletterbuttonvisible
+        hm.recversion = versionId
+        hm.status = statusParam
+        hm.fromdate = fromdate
+        hm.todate = todate
+        hm.recAuthorityType = recAuthorityTypeId
+        
+        hm.msg = "Application summary for management fetched successfully"
         hm.flag = true
     }
 }
